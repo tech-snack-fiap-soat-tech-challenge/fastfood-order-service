@@ -112,19 +112,19 @@ export class OrderController {
     );
   }
 
-  // @ApiOperation({ summary: 'Delete an existing order' })
-  // @ApiResponse({
-  //   status: HttpStatus.NO_CONTENT,
-  //   description: 'The order has been successfully deleted.',
-  // })
-  // @ApiResponse({
-  //   status: HttpStatus.NOT_FOUND,
-  //   description: 'Order not found.',
-  // })
-  // @Delete(':orderId')
-  // async deleteOrder(@Param('orderId') id: number): Promise<void> {
-  //   return this.commandBus.execute<DeleteOrderCommand, void>(
-  //     new DeleteOrderCommand(id),
-  //   );
-  // }
+  @ApiOperation({ summary: 'Delete an existing order' })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: 'The order has been successfully deleted.',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Order not found.',
+  })
+  @Delete(':orderId')
+  async deleteOrder(@Param('orderId') id: string): Promise<void> {
+    return this.commandBus.execute<DeleteOrderCommand, void>(
+      new DeleteOrderCommand(id),
+    );
+  }
 }

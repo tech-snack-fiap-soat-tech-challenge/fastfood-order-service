@@ -13,12 +13,12 @@ export class DeleteOrderHandler implements ICommandHandler<DeleteOrderCommand> {
 
   async execute(command: DeleteOrderCommand): Promise<void> {
     const { id } = command;
-    const order = await this.ordersRepository.findById(id);
+    const order = await this.ordersRepository.getById(id);
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
-    // order.status = OrderStatusEnum.Cancelled;
+    order.status = OrderStatusEnum.Cancelled;
     await this.ordersRepository.update(id, order);
   }
 }
