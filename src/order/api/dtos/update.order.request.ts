@@ -1,18 +1,18 @@
-// import { Status } from '@app/order/core/domain/enums/status.enum';
+import { OrderStatusEnum } from '@app/order/core/domain/enums/order.status.enum';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsOptional } from 'class-validator';
 
 export class UpdateOrderRequest {
   @ApiProperty({
-    name: 'statusId',
-    // enum: Status,
-    // example: Status.Received,
+    name: 'status',
+    enum: OrderStatusEnum,
+    example: OrderStatusEnum.Received,
     description: 'The order status',
     required: false,
   })
   @IsOptional()
-  // @IsEnum(Status)
-  statusId: number;
+  @IsEnum(OrderStatusEnum)
+  status: OrderStatusEnum;
 
   @ApiProperty({
     name: 'observation',

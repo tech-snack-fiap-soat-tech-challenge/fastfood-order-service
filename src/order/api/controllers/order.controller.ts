@@ -91,26 +91,26 @@ export class OrderController {
     );
   }
 
-  // @ApiOperation({ summary: 'Update an existing order' })
-  // @ApiResponse({
-  //   status: HttpStatus.OK,
-  //   description: 'The order has been successfully updated.',
-  //   // type: ProductOutput,
-  // })
-  // @ApiResponse({
-  //   status: HttpStatus.NOT_FOUND,
-  //   description: 'Order not found.',
-  // })
-  // @Put(':orderId')
-  // @UsePipes(new ValidationPipe({ transform: true }))
-  // async updateOrder(
-  //   @Param('orderId') id: number,
-  //   @Body() order: UpdateOrderRequest,
-  // ): Promise<UpdateOrderOutput> {
-  //   return this.commandBus.execute<UpdateOrderCommand, UpdateOrderOutput>(
-  //     new UpdateOrderCommand(id, order),
-  //   );
-  // }
+  @ApiOperation({ summary: 'Update an existing order' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'The order has been successfully updated.',
+    type: OrderOutput,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Order not found.',
+  })
+  @Put(':orderId')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async updateOrder(
+    @Param('orderId') id: string,
+    @Body() order: UpdateOrderRequest,
+  ): Promise<UpdateOrderOutput> {
+    return this.commandBus.execute<UpdateOrderCommand, UpdateOrderOutput>(
+      new UpdateOrderCommand(id, order),
+    );
+  }
 
   // @ApiOperation({ summary: 'Delete an existing order' })
   // @ApiResponse({

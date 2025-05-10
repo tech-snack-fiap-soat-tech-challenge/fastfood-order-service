@@ -13,15 +13,14 @@ export class UpdateOrderHandler
     private readonly ordersRepository: IOrdersRepository,
   ) {}
   async execute(command: UpdateOrderCommand) {
-    const order = await this.ordersRepository.findById(command.id);
+    const order = await this.ordersRepository.getById(command.id);
+
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
-    console.log('command', command);
-
-    // order.observation = command.observation ?? order.observation;
-    // order.statusId = command.statusId ?? order.statusId;
+    order.observation = command.observation ?? order.observation;
+    order.status = command.status ?? order.status;
 
     const updated = await this.ordersRepository.update(command.id, order);
     return UpdateOrderOutput.from(updated);

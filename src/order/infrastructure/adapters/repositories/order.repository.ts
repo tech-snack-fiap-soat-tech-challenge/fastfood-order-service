@@ -3,6 +3,7 @@ import {
   DynamoDBDocumentClient,
   PutCommand,
   ScanCommand,
+  UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { DYNAMO_CLIENT } from '@common/providers/dynamodb.provider';
 import { marshall } from '@aws-sdk/util-dynamodb';
@@ -20,6 +21,7 @@ export class OrdersRepository implements IOrdersRepository {
     @Inject(DYNAMO_CLIENT)
     private readonly db: DynamoDBDocumentClient,
   ) {}
+
   async getAll(): Promise<OrderEntity[]> {
     const allowedStatuses = [
       OrderStatusEnum.Pending,
@@ -77,8 +79,40 @@ export class OrdersRepository implements IOrdersRepository {
     throw new Error('Method not implemented.');
   }
 
-  findById(orderId: string): Promise<OrderEntity | null> {
-    throw new Error('Method not implemented.');
+  async getById(id: string): Promise<OrderEntity | null> {
+    const { Items } = await this.db.send(
+      new ScanCommand({
+        TableName: this.table,
+        // Filtra pelo ID do pedido
+        ExpressionAttributeNames: {
+          '#id': 'id',
+        },
+        FilterExpression: '#id = :id',
+        ExpressionAttributeValues: {
+          ':id': id,
+        },
+      }),
+    );
+
+    if (!Items || !Items.length) return null;
+
+    const item = Items[0] as OrderEntity;
+    const products = (item.products as { id: number; quantity: number }[]).map(
+      (p) => new OrderProductEntity(p.id, p.quantity),
+    );
+
+    const order = new OrderEntity({
+      id: item.id,
+      customerId: item.customerId,
+      products,
+      observation: item.observation,
+      createdAt: item.createdAt,
+    });
+
+    order.status = item.status;
+    order.total = item.total;
+
+    return order;
   }
 
   async getByStatus(status: OrderStatusEnum): Promise<OrderEntity[]> {
@@ -130,12 +164,70 @@ export class OrdersRepository implements IOrdersRepository {
 
     return order;
   }
-  update(
-    orderId: string,
+
+  async update(
+    id: string,
     patch: Partial<Pick<OrderEntity, 'observation' | 'status'>>,
   ): Promise<OrderEntity> {
-    throw new Error('Method not implemented.');
+    // Inicializa arrays para construir a expressão dinamicamente
+    const updateExpressions: string[] = [];
+    const expressionAttributeValues: Record<string, string | number | boolean> =
+      {};
+    const expressionAttributeNames: Record<string, string> = {};
+
+    // Adiciona campos dinamicamente à expressão
+    if (patch.observation) {
+      updateExpressions.push('#observation = :observation');
+      expressionAttributeValues[':observation'] = patch.observation;
+      expressionAttributeNames['#observation'] = 'observation';
+    }
+
+    if (patch.status) {
+      updateExpressions.push('#status = :status');
+      expressionAttributeValues[':status'] = patch.status;
+      expressionAttributeNames['#status'] = 'status'; // Usa alias para evitar conflito
+    }
+
+    // Verifica se há algo para atualizar
+    if (updateExpressions.length === 0) {
+      throw new Error('No fields to update');
+    }
+
+    const { Attributes } = await this.db.send(
+      new UpdateCommand({
+        TableName: this.table,
+        Key: { id },
+        UpdateExpression: `SET ${updateExpressions.join(', ')}`, // Concatena os campos com vírgulas
+        ExpressionAttributeValues: expressionAttributeValues,
+        ExpressionAttributeNames: expressionAttributeNames, // Adiciona os aliases
+        ReturnValues: 'ALL_NEW', // Retorna o item atualizado
+      }),
+    );
+
+    if (!Attributes) {
+      throw new Error(`Order with ID ${id} not found`);
+    }
+
+    const result = Attributes as OrderEntity;
+
+    const products = (
+      Attributes.products as { id: number; quantity: number }[]
+    ).map((p) => new OrderProductEntity(p.id, p.quantity));
+
+    const updatedOrder = new OrderEntity({
+      id: result.id,
+      customerId: result.customerId,
+      products,
+      observation: result.observation,
+      createdAt: result.createdAt,
+    });
+
+    updatedOrder.status = result.status;
+    updatedOrder.total = result.total;
+
+    return updatedOrder;
   }
+
   delete(orderId: string): Promise<void> {
     throw new Error('Method not implemented.');
   }

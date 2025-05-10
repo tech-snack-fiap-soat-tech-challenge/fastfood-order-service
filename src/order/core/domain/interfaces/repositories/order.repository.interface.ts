@@ -4,7 +4,7 @@ import { OrderStatusEnum } from '../../enums/order.status.enum';
 export interface IOrdersRepository {
   getAll(): Promise<OrderEntity[]>;
   listByCustomer(customerId: string): Promise<OrderEntity[]>;
-  findById(orderId: string): Promise<OrderEntity | null>;
+  getById(id: string): Promise<OrderEntity | null>;
   getByStatus(status: OrderStatusEnum): Promise<OrderEntity[]>;
   create(order: OrderEntity): Promise<OrderEntity>;
   update(
