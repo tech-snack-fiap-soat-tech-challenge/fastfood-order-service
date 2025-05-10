@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { OrderController } from './order.controller';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { mock } from 'jest-mock-extended';
+import { OrderController } from '@app/order/api/controllers/order.controller';
 
 describe('OrderController (init only)', () => {
   let controller: OrderController;
