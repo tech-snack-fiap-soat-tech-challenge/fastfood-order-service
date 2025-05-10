@@ -25,6 +25,8 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UpdateOrderRequest } from '../dtos/update.order.request';
 import { DeleteOrderCommand } from '@app/order/core/application/use-cases/delete-order/delete-order.command';
+import { OrderStatusEnum } from '@app/order/core/domain/enums/order.status.enum';
+import { OrderOutput } from '@app/order/core/application/dtos/order.output';
 
 @ApiTags('orders')
 @Controller('orders')
@@ -38,7 +40,7 @@ export class OrderController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Return all orders.',
-    // type: [ProductOutput],
+    type: [OrderOutput],
   })
   @Get('/')
   getAllOrders() {
@@ -47,30 +49,34 @@ export class OrderController {
     );
   }
 
-  // @ApiOperation({ summary: 'Get order by status' })
-  // @ApiResponse({
-  //   status: HttpStatus.OK,
-  //   description: 'Return the order.',
-  //   // type: ProductOutput,
-  // })
-  // @ApiResponse({
-  //   status: HttpStatus.NOT_FOUND,
-  //   description: 'Order not found.',
-  // })
-  // @ApiQuery({ name: 'statusId', type: Number, required: true })
-  // @Get('/by-status')
-  // async getOrderById(@Query('statusId', ParseIntPipe) status: number) {
-  //   return this.queryBus.execute<
-  //     GetOrdersByStatusQuery,
-  //     GetOrdersByStatusOutput
-  //   >(new GetOrdersByStatusQuery(status));
-  // }
+  @ApiOperation({ summary: 'Get order by status' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Return the order.',
+    type: [OrderOutput],
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Order not found.',
+  })
+  @ApiQuery({
+    name: 'status',
+    enum: OrderStatusEnum,
+    required: true,
+  })
+  @Get('/by-status')
+  async getOrderById(@Query('status') status: OrderStatusEnum) {
+    return this.queryBus.execute<
+      GetOrdersByStatusQuery,
+      GetOrdersByStatusOutput
+    >(new GetOrdersByStatusQuery(status));
+  }
 
   @ApiOperation({ summary: 'Create a new order' })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'The order has been successfully created.',
-    // type: ProductOutput,
+    type: OrderOutput,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,

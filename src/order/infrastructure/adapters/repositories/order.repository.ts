@@ -81,8 +81,41 @@ export class OrdersRepository implements IOrdersRepository {
     throw new Error('Method not implemented.');
   }
 
-  listByStatus(status: OrderStatusEnum): Promise<OrderEntity[]> {
-    throw new Error('Method not implemented.');
+  async getByStatus(status: OrderStatusEnum): Promise<OrderEntity[]> {
+    const { Items } = await this.db.send(
+      new ScanCommand({
+        TableName: this.table,
+        // Apelida "status" como "#st"
+        ExpressionAttributeNames: {
+          '#st': 'status',
+        },
+        FilterExpression: '#st = :status',
+        ExpressionAttributeValues: {
+          ':status': status,
+        },
+      }),
+    );
+
+    if (!Items || !Items.length) return [];
+
+    return Items.map((item: OrderEntity) => {
+      const products = (
+        item.products as { id: number; quantity: number }[]
+      ).map((p) => new OrderProductEntity(p.id, p.quantity));
+
+      const order = new OrderEntity({
+        id: item.id,
+        customerId: item.customerId,
+        products,
+        observation: item.observation,
+        createdAt: item.createdAt,
+      });
+
+      order.status = item.status;
+      order.total = item.total;
+
+      return order;
+    });
   }
 
   async create(order: OrderEntity): Promise<OrderEntity> {

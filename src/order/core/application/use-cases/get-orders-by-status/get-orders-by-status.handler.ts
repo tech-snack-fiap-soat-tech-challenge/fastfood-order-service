@@ -16,8 +16,8 @@ export class GetOrdersByStatusHandler
   async execute(
     query: GetOrdersByStatusQuery,
   ): Promise<GetOrdersByStatusOutput> {
-    const { statusId } = query;
-    const orders = await this.orderRepository.listByStatus(statusId);
+    const { status } = query;
+    const orders = await this.orderRepository.getByStatus(status);
 
     return GetOrdersByStatusOutput.from(orders);
   }
