@@ -1,0 +1,51 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Nest (Launch + Hot Reload)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start:debug:new"],
+      "port": 9229,
+      "autoAttachChildProcesses": true,
+      "restart": true,
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/**/*.ts"],
+      "console": "integratedTerminal",
+      "reuseTerminal": true // Reutiliza o mesmo terminal
+    },
+    {
+      "type": "node",
+      "request": "launch",         // você mesmo inicia o processo
+      "name": "Nest (Launch + Debug)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "start:debug",
+        "--",                     // tudo depois de “--” vai para o script
+        "--inspect-brk"           // força pausa na primeira linha (opcional)
+      ],
+      "port": 9229,               // deve coincidir com o que o Node expõe
+      "autoAttachChildProcesses": true,
+      "restart": true,            // reinicia se o processo cair
+      "sourceMaps": true,         // usa os .map gerados pelo ts-node
+      "outFiles": [
+        "${workspaceFolder}/**/*.ts"
+      ],
+      "console": "integratedTerminal"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug NestJS",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start:debug"],
+      "port": 9229,                   // mesma porta que o Nest abre
+      "autoAttachChildProcesses": true,
+      "envFile": "${workspaceFolder}/.env",
+      "outputCapture": "std",         // mostra logs no console do debug
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}
