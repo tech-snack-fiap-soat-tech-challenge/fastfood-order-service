@@ -14,7 +14,8 @@ export const DynamoProvider: Provider = {
     });
     return DynamoDBDocumentClient.from(client, {
       marshallOptions: {
-        removeUndefinedValues: true,
+        removeUndefinedValues: true, // Remove valores undefined
+        convertEmptyValues: true, // Converte strings vazias para null
         convertClassInstanceToMap: true,
       },
     });
