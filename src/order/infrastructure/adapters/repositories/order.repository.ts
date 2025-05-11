@@ -56,27 +56,22 @@ export class OrdersRepository implements IOrdersRepository {
     if (!Items || !Items.length) return [];
 
     return Items.map((item: OrderEntity) => {
-      const products = (
-        item.products as { id: number; quantity: number }[]
-      ).map((p) => new OrderProductEntity(p.id, p.quantity));
+      const products = item.products.map(
+        (p) => new OrderProductEntity(p.id, p.name, p.quantity, p.price),
+      );
 
       const order = new OrderEntity({
         id: item.id,
         customerId: item.customerId,
+        status: item.status,
         products,
         observation: item.observation,
+        total: item.total,
         createdAt: item.createdAt,
       });
 
-      order.status = item.status;
-      order.total = item.total;
-
       return order;
     });
-  }
-
-  listByCustomer(customerId: string): Promise<OrderEntity[]> {
-    throw new Error('Method not implemented.');
   }
 
   async getById(id: string): Promise<OrderEntity | null> {
@@ -97,14 +92,16 @@ export class OrdersRepository implements IOrdersRepository {
     if (!Items || !Items.length) return null;
 
     const item = Items[0] as OrderEntity;
-    const products = (item.products as { id: number; quantity: number }[]).map(
-      (p) => new OrderProductEntity(p.id, p.quantity),
+    const products = item.products.map(
+      (p) => new OrderProductEntity(p.id, p.name, p.quantity, p.price),
     );
 
     const order = new OrderEntity({
       id: item.id,
       customerId: item.customerId,
+      status: item.status,
       products,
+      total: item.total,
       observation: item.observation,
       createdAt: item.createdAt,
     });
@@ -237,7 +234,14 @@ function debugMarshall(item: Record<string, unknown>) {
   for (const [key, val] of Object.entries(item)) {
     try {
       // Tenta converter só aquele par chave–valor
-      marshall({ [key]: val }, { convertClassInstanceToMap: true });
+      marshall(
+        { [key]: val },
+        {
+          removeUndefinedValues: true, // Remove valores undefined
+          convertEmptyValues: true, // Converte strings vazias para null
+          convertClassInstanceToMap: true,
+        },
+      );
     } catch (err) {
       console.error(`Atributo inválido: "${key}" →`, val, '\nErro:', err);
     }
