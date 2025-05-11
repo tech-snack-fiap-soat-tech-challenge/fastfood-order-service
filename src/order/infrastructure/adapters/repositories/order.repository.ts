@@ -4,6 +4,7 @@ import {
   PutCommand,
   ScanCommand,
   UpdateCommand,
+  DeleteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { DYNAMO_CLIENT } from '@common/providers/dynamodb.provider';
 import { marshall } from '@aws-sdk/util-dynamodb';
@@ -227,8 +228,18 @@ export class OrdersRepository implements IOrdersRepository {
     return updatedOrder;
   }
 
-  delete(orderId: string): Promise<void> {
-    throw new Error('Method not implemented.');
+  async delete(orderId: string): Promise<void> {
+    try {
+      await this.db.send(
+        new DeleteCommand({
+          TableName: this.table,
+          Key: { id: orderId }, // Chave primária para identificar o item
+        }),
+      );
+    } catch (error) {
+      console.error(`Failed to delete order with ID ${orderId}:`, error);
+      throw new Error(`Could not delete order with ID ${orderId}`);
+    }
   }
 }
 
