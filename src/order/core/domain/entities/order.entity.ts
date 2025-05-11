@@ -13,15 +13,17 @@ export class OrderEntity {
   constructor(init: {
     id: string;
     customerId: number;
+    status: OrderStatusEnum;
     products: OrderProductEntity[];
     observation: string;
+    total: number;
     createdAt?: string;
   }) {
     this.id = init.id;
     this.customerId = init.customerId;
-    this.status = OrderStatusEnum.Pending;
+    this.status = init.status || OrderStatusEnum.Pending;
     this.products = init.products;
-    this.total = 123;
+    this.total = init.total || 0;
     this.observation = init.observation;
     this.createdAt = init.createdAt || new Date().toISOString();
   }
