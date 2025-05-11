@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.799.0",
+    "@aws-sdk/client-sqs": "^3.799.0",
     "@aws-sdk/lib-dynamodb": "^3.799.0",
     "@nestjs/common": "^10.4.6",
     "@nestjs/config": "^3.2.3",
