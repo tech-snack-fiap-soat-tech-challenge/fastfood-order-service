@@ -1,8 +1,8 @@
+import { OrderProductInput } from './order-products.input';
+
 export interface OrderInput {
   customerId: number;
   observation?: string;
-  products?: {
-    id: number;
-    quantity: number;
-  }[];
+  products: OrderProductInput;
+  total: number;
 }
