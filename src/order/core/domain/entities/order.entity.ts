@@ -13,7 +13,7 @@ export class OrderEntity {
   constructor(init: {
     id: string;
     customerId: number;
-    status: OrderStatusEnum;
+    status?: OrderStatusEnum;
     products: OrderProductEntity[];
     observation: string;
     total: number;
