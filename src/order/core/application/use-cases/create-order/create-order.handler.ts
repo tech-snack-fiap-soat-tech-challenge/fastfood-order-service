@@ -13,17 +13,25 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { OrderProductInput } from '../../dtos/order-products.input';
 import { IProduct } from '@app/common/interfaces/product';
+import { SqsService } from '@app/common/application/sqs.service';
+import { ConfigService } from '@nestjs/config';
 
 @CommandHandler(CreateOrderCommand)
 export class CreateOrderHandler
   implements ICommandHandler<CreateOrderCommand, CreateOrderOutput>
 {
+  private readonly queueUrl: string;
+
   constructor(
     @Inject(IOrdersRepository)
     private readonly ordersRepository: IOrdersRepository,
+    private readonly configService: ConfigService,
+    private readonly sqsService: SqsService,
     private readonly queryBus: QueryBus,
     private readonly eventBus: EventBus,
-  ) {}
+  ) {
+    this.queueUrl = this.configService.get<string>('sqs.orderCreatedQueueUrl');
+  }
 
   private loadProducts(): IProduct[] {
     const productsFilePath = path.resolve(
@@ -79,9 +87,15 @@ export class CreateOrderHandler
 
     await this.ordersRepository.create(entity);
 
-    // this.eventBus.publish(
-    //   new OrderCreatedEvent(order.id, customerId, order.total),
-    // );
+    await this.sqsService.sendMessage(
+      this.queueUrl,
+      entity.id,
+      JSON.stringify({
+        orderId: entity.id,
+        customerId,
+        total,
+      }),
+    );
 
     return CreateOrderOutput.from(entity);
   }

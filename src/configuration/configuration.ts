@@ -4,6 +4,11 @@ export interface AppConfig {
     port: number;
     logLevel: string;
   };
+  sqs: {
+    region: string;
+    endpoint: string;
+    orderCreatedQueueUrl: string;
+  };
 }
 
 export const configuration = (): AppConfig => ({
@@ -11,6 +16,17 @@ export const configuration = (): AppConfig => ({
     env: process.env.NODE_ENV || 'development',
     port: parseInt(process.env.PORT, 10) || 3000,
     logLevel: process.env.LOG_LEVEL || 'debug',
+  },
+  sqs: {
+    region: process.env.AWS_REGION || 'us-east-1',
+    endpoint:
+      process.env.SQS_ENDPOINT ||
+      (process.env.NODE_ENV === 'development'
+        ? 'http://localhost:9324'
+        : 'https://sqs.us-east-1.amazonaws.com'),
+    orderCreatedQueueUrl:
+      process.env.AWS_ORDER_CREATED_QUEUE_URL ||
+      'http://localhost:9324/000000000000/order-created.fifo',
   },
 });
 

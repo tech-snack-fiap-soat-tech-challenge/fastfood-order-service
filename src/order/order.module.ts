@@ -1,5 +1,3 @@
-import { OrderEntity } from '@app/order/core/domain/entities/order.entity';
-// import { OrdersRepository } from '@app/order/infrastructure/adapters/repositories/order.repository';
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { OrderController } from '@order/api/controllers/order.controller';
@@ -11,6 +9,7 @@ import { UpdateOrderHandler } from './core/application/use-cases/update-order/up
 import { DeleteOrderHandler } from './core/application/use-cases/delete-order/delete-order.handler';
 import { PaymentEventHandler } from './core/application/listeners/payment/payment.handler';
 import { OrdersRepository } from './infrastructure/adapters/repositories/order.repository';
+import { CommonModule } from '@app/common/application/common.module';
 
 const handlers = [
   GetAllOrdersQueryHandler,
@@ -21,14 +20,14 @@ const handlers = [
   PaymentEventHandler,
 ];
 
-const ordersRepository = {
+const OrdersRepositoryProvider = {
   provide: IOrdersRepository,
   useClass: OrdersRepository,
 };
 
 @Module({
-  imports: [CqrsModule],
+  imports: [CqrsModule, CommonModule],
   controllers: [OrderController],
-  providers: [...handlers, ordersRepository],
+  providers: [...handlers, OrdersRepositoryProvider],
 })
 export class OrderModule {}
