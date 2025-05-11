@@ -130,15 +130,16 @@ export class OrdersRepository implements IOrdersRepository {
     if (!Items || !Items.length) return [];
 
     return Items.map((item: OrderEntity) => {
-      const products = (
-        item.products as { id: number; quantity: number }[]
-      ).map((p) => new OrderProductEntity(p.id, p.quantity));
+      const products = item.products.map(
+        (p) => new OrderProductEntity(p.id, p.name, p.quantity, p.price),
+      );
 
       const order = new OrderEntity({
         id: item.id,
         customerId: item.customerId,
         products,
         observation: item.observation,
+        total: item.total,
         createdAt: item.createdAt,
       });
 
