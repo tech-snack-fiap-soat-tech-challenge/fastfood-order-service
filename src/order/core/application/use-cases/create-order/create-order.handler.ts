@@ -9,10 +9,10 @@ import { CreateOrderOutput } from './create-order.output';
 import { IOrdersRepository } from '@app/order/core/domain/interfaces/repositories/order.repository.interface';
 import { Inject } from '@nestjs/common';
 import { OrderMapper } from '../../mappers/order.mapper';
-// import { GetProductByIdQuery } from '@app/product/core/application/use-cases/get-product-by-id/get-product-by-id.query';
-// import { OrderProductsMapper } from '../../mappers/order.product.mapper';
-// import { GetProductByIdOutput } from '@app/product/core/application/use-cases/get-product-by-id/get-product-by-id.output';
-import { OrderCreatedEvent } from '@common/domain/events/order-created.event';
+import * as fs from 'fs';
+import * as path from 'path';
+import { OrderProductInput } from '../../dtos/order-products.input';
+import { IProduct } from '@app/common/interfaces/product';
 
 @CommandHandler(CreateOrderCommand)
 export class CreateOrderHandler
@@ -25,16 +25,58 @@ export class CreateOrderHandler
     private readonly eventBus: EventBus,
   ) {}
 
+  private loadProducts(): IProduct[] {
+    const productsFilePath = path.resolve(
+      __dirname,
+      '../../../../../mocks/products.json',
+    );
+    return JSON.parse(fs.readFileSync(productsFilePath, 'utf-8')) as IProduct[];
+  }
+
+  private filterAndTransformProducts(
+    products: OrderProductInput[],
+    productsData: IProduct[],
+  ): OrderProductInput[] {
+    const productIds = products.map((product) => product.id);
+
+    const matchedProducts = productsData.filter((product: IProduct) =>
+      productIds.includes(product.id),
+    );
+
+    return matchedProducts.map((product: IProduct) => ({
+      id: product.id,
+      name: product.name,
+      quantity: products.find((p) => p.id === product.id)?.quantity || 0,
+      price: product.unit_price,
+    }));
+  }
+
+  private calculateTotal(products: OrderProductInput[]): number {
+    return products.reduce(
+      (sum, product) => sum + product.price * product.quantity,
+      0,
+    );
+  }
+
   async execute(command: CreateOrderCommand) {
     const { customerId, observation, products } = command;
+
+    const productsData = this.loadProducts();
+
+    const transformedProducts = this.filterAndTransformProducts(
+      products,
+      productsData,
+    );
+
+    const total = this.calculateTotal(transformedProducts);
 
     const entity = OrderMapper.toEntity({
       customerId,
       observation,
-      products,
+      products: transformedProducts,
+      total,
     });
 
-    // const productIds = products.map((product) => product.productId);
     await this.ordersRepository.create(entity);
 
     // this.eventBus.publish(
