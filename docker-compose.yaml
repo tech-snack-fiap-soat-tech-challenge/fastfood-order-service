@@ -1,19 +1,14 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:latest
-    container_name: postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: fastfood
+  dynamodb:
+    image: amazon/dynamodb-local
+    container_name: dynamodb
     ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - "8000:8000" # Porta padrão do DynamoDB local
     networks:
       - app-network
+    command: -jar DynamoDBLocal.jar -sharedDb # Comando equivalente ao que você usou no Docker CLI
   elasticmq:
     image: softwaremill/elasticmq-native:1.6.12
     container_name: elasticmq
@@ -25,44 +20,23 @@ services:
     volumes:
       - ./docker/elasticmq.conf:/opt/elasticmq.conf
     command: -Dconfig.file=/opt/elasticmq.conf
-
-  # This is for local development only, for the final delivery remove this service
-  # pgadmin:
-  #   image: dpage/pgadmin4:latest
-  #   container_name: pgadmin
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/Dockerfile
+  #   container_name: app
   #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: postgres@admin.com
-  #     PGADMIN_DEFAULT_PASSWORD: admin
+  #     DB_HOST: postgres
+  #     DB_PORT: 5432
+  #     DB_USER: postgres
+  #     DB_PASSWORD: postgres
+  #     DB_NAME: fastfood
   #   ports:
-  #     - "9080:80"
+  #     - "3000:3000"
   #   depends_on:
   #     - postgres
-  #   volumes:
-  #     - pgadmin-data:/var/lib/pgadmin
   #   networks:
   #     - app-network
-
-  app:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-    container_name: app
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: fastfood
-    ports:
-      - "3000:3000"
-    depends_on:
-      - postgres
-    networks:
-      - app-network
-
-volumes:
-  postgres_data:
-  # pgadmin-data:
 
 networks:
   app-network:
