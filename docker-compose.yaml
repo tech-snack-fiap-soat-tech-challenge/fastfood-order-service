@@ -14,6 +14,17 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
+  elasticmq:
+    image: softwaremill/elasticmq-native:1.6.12
+    container_name: elasticmq
+    ports:
+      - "9324:9324"
+      - "9325:9325"
+    networks:
+      - app-network
+    volumes:
+      - ./docker/elasticmq.conf:/opt/elasticmq.conf
+    command: -Dconfig.file=/opt/elasticmq.conf
 
   # This is for local development only, for the final delivery remove this service
   # pgadmin:
