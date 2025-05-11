@@ -3,6 +3,7 @@ import { OrderProductsMapper } from './order.product.mapper';
 import { OrderOutput } from '../dtos/order.output';
 import { randomUUID } from 'crypto';
 import { OrderInput } from '../dtos/order.input';
+import { OrderStatusEnum } from '../../domain/enums/order.status.enum';
 
 export class OrderMapper {
   static toDto(order: OrderEntity): OrderOutput {
@@ -18,11 +19,14 @@ export class OrderMapper {
   }
 
   static toEntity(dto: OrderInput): OrderEntity {
-    const products = dto.products?.map(OrderProductsMapper.toEntity);
+    const products = Array.isArray(dto.products)
+      ? dto.products.map(OrderProductsMapper.toEntity)
+      : [];
     return new OrderEntity({
       id: randomUUID(),
       customerId: dto.customerId,
       products: products,
+      total: dto.total,
       observation: dto.observation,
       createdAt: new Date().toISOString(),
     });
