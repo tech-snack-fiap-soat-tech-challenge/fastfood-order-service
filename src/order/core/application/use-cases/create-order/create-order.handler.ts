@@ -1,9 +1,4 @@
-import {
-  CommandHandler,
-  EventBus,
-  ICommandHandler,
-  QueryBus,
-} from '@nestjs/cqrs';
+import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { CreateOrderCommand } from './create-order.command';
 import { CreateOrderOutput } from './create-order.output';
 import { IOrdersRepository } from '@app/order/core/domain/interfaces/repositories/order.repository.interface';
@@ -15,6 +10,7 @@ import { OrderProductInput } from '../../dtos/order-products.input';
 import { IProduct } from '@app/common/interfaces/product';
 import { SqsService } from '@app/common/application/sqs.service';
 import { ConfigService } from '@nestjs/config';
+import { OrderProduct } from '@app/order/api/dtos/create.order.request';
 
 @CommandHandler(CreateOrderCommand)
 export class CreateOrderHandler
@@ -27,22 +23,21 @@ export class CreateOrderHandler
     private readonly ordersRepository: IOrdersRepository,
     private readonly configService: ConfigService,
     private readonly sqsService: SqsService,
-    private readonly queryBus: QueryBus,
-    private readonly eventBus: EventBus,
   ) {
     this.queueUrl = this.configService.get<string>('sqs.orderCreatedQueueUrl');
   }
 
-  private loadProducts(): IProduct[] {
+  private async loadProducts(): Promise<IProduct[]> {
     const productsFilePath = path.resolve(
       __dirname,
       '../../../../../mocks/products.json',
     );
-    return JSON.parse(fs.readFileSync(productsFilePath, 'utf-8')) as IProduct[];
+    const fileContent = await fs.promises.readFile(productsFilePath, 'utf-8');
+    return JSON.parse(fileContent) as IProduct[];
   }
 
   private filterAndTransformProducts(
-    products: OrderProductInput[],
+    products: OrderProduct[],
     productsData: IProduct[],
   ): OrderProductInput[] {
     const productIds = products.map((product) => product.id);
@@ -69,7 +64,7 @@ export class CreateOrderHandler
   async execute(command: CreateOrderCommand) {
     const { customerId, observation, products } = command;
 
-    const productsData = this.loadProducts();
+    const productsData = await this.loadProducts();
 
     const transformedProducts = this.filterAndTransformProducts(
       products,
