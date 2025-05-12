@@ -10,6 +10,7 @@ import { DeleteOrderHandler } from './core/application/use-cases/delete-order/de
 import { PaymentEventHandler } from './core/application/listeners/payment/payment.handler';
 import { OrdersRepository } from './infrastructure/adapters/repositories/order.repository';
 import { CommonModule } from '@app/common/application/common.module';
+import { PaymentListener } from './core/application/listeners/payment/payment.listener';
 
 const handlers = [
   GetAllOrdersQueryHandler,
@@ -20,6 +21,8 @@ const handlers = [
   PaymentEventHandler,
 ];
 
+const listeners = [PaymentListener];
+
 const OrdersRepositoryProvider = {
   provide: IOrdersRepository,
   useClass: OrdersRepository,
@@ -28,6 +31,6 @@ const OrdersRepositoryProvider = {
 @Module({
   imports: [CqrsModule, CommonModule],
   controllers: [OrderController],
-  providers: [...handlers, OrdersRepositoryProvider],
+  providers: [...handlers, ...listeners, OrdersRepositoryProvider],
 })
 export class OrderModule {}
