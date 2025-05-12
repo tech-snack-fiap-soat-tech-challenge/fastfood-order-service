@@ -3,15 +3,7 @@ import { OrderOutput } from '../../dtos/order.output';
 import { OrderMapper } from '../../mappers/order.mapper';
 
 export class GetOrdersByStatusOutput {
-  orders: OrderOutput[];
-
-  constructor(orders: OrderOutput[]) {
-    this.orders = orders;
-  }
-
-  public static from(orders: OrderEntity[]): GetOrdersByStatusOutput {
-    return new GetOrdersByStatusOutput(
-      orders.map((order) => OrderMapper.toDto(order)),
-    );
+  public static from(orders: OrderEntity[]): OrderOutput[] {
+    return orders.map((order) => OrderMapper.toDto(order));
   }
 }
