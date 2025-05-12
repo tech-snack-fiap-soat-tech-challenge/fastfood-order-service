@@ -1,9 +1,9 @@
-import { Status } from '@app/common/enuns/status.enum';
+import { CheckoutStatusEnum } from '@app/common/enums/checkout-status.enum';
 import { IEvent } from '@nestjs/cqrs';
 
 export class CheckoutUpdatedEvent implements IEvent {
   constructor(
-    public readonly orderId: number,
-    public readonly checkoutStatus: Status,
+    public readonly orderId: string,
+    public readonly checkoutStatus: CheckoutStatusEnum,
   ) {}
 }
