@@ -11,6 +11,7 @@ import { IProduct } from '@app/common/interfaces/product';
 import { SqsService } from '@app/common/application/sqs.service';
 import { ConfigService } from '@nestjs/config';
 import { OrderProduct } from '@app/order/api/dtos/create.order.request';
+import { OrderCreatedEvent } from '@app/common/domain/events/order-created.event';
 
 @CommandHandler(CreateOrderCommand)
 export class CreateOrderHandler
@@ -82,14 +83,16 @@ export class CreateOrderHandler
 
     await this.ordersRepository.create(entity);
 
+    const orderCreatedEvent = new OrderCreatedEvent(
+      entity.id,
+      customerId,
+      total,
+    );
+
     await this.sqsService.sendMessage(
       this.queueUrl,
       entity.id,
-      JSON.stringify({
-        orderId: entity.id,
-        customerId,
-        total,
-      }),
+      JSON.stringify(orderCreatedEvent),
     );
 
     return CreateOrderOutput.from(entity);
