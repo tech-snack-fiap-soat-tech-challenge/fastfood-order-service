@@ -1,15 +1,13 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, Min } from 'class-validator';
-import { OrderProductInput } from '../../dtos/order-products.input';
+import { OrderProduct } from '@app/order/api/dtos/create.order.request';
 
 export class CreateOrderCommand {
   public readonly customerId: number;
-  public readonly products: OrderProductInput[];
+  public readonly products: OrderProduct[];
   public readonly observation: string;
 
   constructor(props: {
     customerId: number;
-    products: OrderProductInput[];
+    products: OrderProduct[];
     observation: string;
   }) {
     this.customerId = props.customerId;
