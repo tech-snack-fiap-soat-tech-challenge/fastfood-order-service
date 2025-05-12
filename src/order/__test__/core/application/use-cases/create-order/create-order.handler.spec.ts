@@ -105,7 +105,7 @@ describe('CreateOrderHandler', () => {
         JSON.stringify({
           orderId: mockOrderEntity.id,
           customerId: 123,
-          total: 100,
+          amount: 100,
         }),
       );
       expect(result).toEqual(CreateOrderOutput.from(mockOrderEntity));
