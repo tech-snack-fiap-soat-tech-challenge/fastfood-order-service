@@ -2,6 +2,8 @@ import { CheckoutUpdatedEvent } from '@common/domain/events/checkoutUpdatedEvent
 import { IOrdersRepository } from '@app/order/core/domain/interfaces/repositories/order.repository.interface';
 import { Inject } from '@nestjs/common';
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
+import { CheckoutStatusEnum } from '@app/common/enums/checkout-status.enum';
+import { OrderStatusEnum } from '@app/order/core/domain/enums/order.status.enum';
 
 @EventsHandler(CheckoutUpdatedEvent)
 export class PaymentEventHandler
@@ -14,14 +16,18 @@ export class PaymentEventHandler
 
   async handle(event: CheckoutUpdatedEvent) {
     console.log('PaymentEventHandler', event);
-    // const statusMapping = { paid: Status.Received, refused: Status.Cancelled };
-    // const order = await this.ordersRepository.getOrderById(event.orderId);
-    // if (!order) {
-    //   throw new Error('Order not found');
-    // }
+    const statusMapping = {
+      [CheckoutStatusEnum.Paid]: OrderStatusEnum.Received,
+      [CheckoutStatusEnum.Refused]: OrderStatusEnum.Cancelled,
+    };
+    const order = await this.ordersRepository.getById(event.orderId);
+    if (!order) {
+      throw new Error('Order not found');
+    }
 
-    // order.statusId =
-    //   statusMapping[event.checkoutStatus as keyof typeof statusMapping];
-    await this.ordersRepository.getAll();
+    order.status =
+      statusMapping[event.checkoutStatus as keyof typeof statusMapping];
+
+    await this.ordersRepository.update(event.orderId, order);
   }
 }
