@@ -25,6 +25,46 @@ jobs:
       - name: Instalar dependências
         run: npm install
 
+      - name: Executar testes e gerar cobertura
+        run: npm run test:coverage
+
+      - name: Enviar cobertura ao SonarQube
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          npx sonar-scanner \
+            -Dsonar.projectKey=meu-projeto \
+            -Dsonar.sources=src \
+            -Dsonar.tests=src \
+            -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
+      - name: Validar Quality Gate do SonarQube
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          echo "Aguardando resultado do Quality Gate..."
+          sleep 10
+
+          ANALYSIS_ID=$(curl -s -u $SONAR_TOKEN: \
+            "$SONAR_HOST_URL/api/ce/component?component=meu-projeto" \
+            | jq -r '.current.analysisId')
+
+          QUALITY_GATE_STATUS=$(curl -s -u $SONAR_TOKEN: \
+            "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" \
+            | jq -r '.projectStatus.status')
+
+          if [ "$QUALITY_GATE_STATUS" != "OK" ]; then
+            echo "\n❌ Quality Gate falhou! Detalhes:" && \
+            curl -s -u $SONAR_TOKEN: \
+              "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" \
+              | jq -r '.projectStatus.conditions[] | select(.status != "OK") | "- " + .metric + ": " + .status + " (" + (.actual // "n/a") + ")"'
+            exit 1
+          else
+            echo "\n✅ Quality Gate aprovado."
+          fi
+
       - name: Compilar TypeScript
         run: npm run build
 
