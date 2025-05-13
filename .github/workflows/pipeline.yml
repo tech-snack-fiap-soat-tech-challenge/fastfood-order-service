@@ -26,7 +26,7 @@ jobs:
         run: npm install
 
       - name: Executar testes e gerar cobertura
-        run: npm run test:coverage
+        run: npm run test:cov
 
       - name: Enviar cobertura ao SonarQube
         env:
