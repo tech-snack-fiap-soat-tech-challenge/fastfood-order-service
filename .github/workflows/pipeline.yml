@@ -33,6 +33,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
+          SCANNER_META_PATH="$(pwd)/.scanner-meta.properties"
           npx sonar-scanner \
             -Dsonar.projectKey=tech-snack-fiap-soat-tech-challenge_fastfood-order-service \
             -Dsonar.organization=tech-snack-fiap-soat-tech-challenge \
@@ -41,7 +42,7 @@ jobs:
             -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info \
             -Dsonar.host.url=$SONAR_HOST_URL \
             -Dsonar.token=$SONAR_TOKEN \
-            -Dsonar.scanner.metadataFilePath=.scanner-meta.properties
+            -Dsonar.scanner.metadataFilePath=$SCANNER_META_PATH
 
       - name: Validar Quality Gate do SonarCloud
         env:
@@ -51,8 +52,9 @@ jobs:
           echo "Aguardando análise do SonarCloud finalizar..."
 
           PROJECT_KEY="tech-snack-fiap-soat-tech-challenge_fastfood-order-service"
+          META_PATH="$(pwd)/.scanner-meta.properties"
 
-          TASK_ID=$(grep ceTaskId .scanner-meta.properties | cut -d'=' -f2)
+          TASK_ID=$(grep ceTaskId "$META_PATH" | cut -d'=' -f2)
 
           if [ -z "$TASK_ID" ]; then
             echo "❌ Não foi possível encontrar ceTaskId. A análise pode ter falhado."
