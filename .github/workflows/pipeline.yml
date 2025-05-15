@@ -36,7 +36,7 @@ jobs:
             -Dsonar.projectKey=tech-snack-fiap-soat-tech-challenge_fastfood-order-service \
             -Dsonar.organization=tech-snack-fiap-soat-tech-challenge \
             -Dsonar.sources=src \
-            -Dsonar.tests=src \
+            -Dsonar.tests=src/test \
             -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info \
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
             -Dsonar.login=${{ secrets.SONAR_TOKEN }}
