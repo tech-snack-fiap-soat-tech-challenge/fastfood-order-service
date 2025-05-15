@@ -40,7 +40,7 @@ jobs:
             -Dsonar.test.inclusions=**/*.spec.ts,**/*.test.ts \
             -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info \
             -Dsonar.host.url=$SONAR_HOST_URL \
-            -Dsonar.login=$SONAR_TOKEN
+            -Dsonar.token=$SONAR_TOKEN
 
       - name: Validar Quality Gate do SonarQube
         env:
@@ -49,8 +49,10 @@ jobs:
           echo "Aguardando resultado do Quality Gate..."
           sleep 10
 
+          PROJECT_KEY="tech-snack-fiap-soat-tech-challenge_fastfood-order-service"
+
           ANALYSIS_ID=$(curl -s -u $SONAR_TOKEN: \
-            "$SONAR_HOST_URL/api/ce/component?component=tech-snack-fiap-soat-tech-challenge_fastfood-order-service" \
+            "$SONAR_HOST_URL/api/ce/component?component=$PROJECT_KEY" \
             | jq -r '.current.analysisId')
 
           QUALITY_GATE_STATUS=$(curl -s -u $SONAR_TOKEN: \
@@ -58,14 +60,15 @@ jobs:
             | jq -r '.projectStatus.status')
 
           if [ "$QUALITY_GATE_STATUS" != "OK" ]; then
-            echo "\n❌ Quality Gate falhou! Detalhes:" && \
+            echo -e "\n❌ Quality Gate falhou! Detalhes:"
             curl -s -u $SONAR_TOKEN: \
-              "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" \
-              | jq -r '.projectStatus.conditions[] | select(.status != "OK") | "- " + .metric + ": " + .status + " (" + (.actual // "n/a") + ")"'
+                "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" \
+                | jq -r '.projectStatus.conditions[] | select(.status != "OK") | "- Critério: \(.metric)\n  Valor atual: \(.actual // "n/a")\n  Status: \(.status)\n"'
             exit 1
           else
-            echo "\n✅ Quality Gate aprovado."
+            echo -e "\n✅ Quality Gate aprovado."
           fi
+
 
       - name: Compilar TypeScript
         run: npm run build
