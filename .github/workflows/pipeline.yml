@@ -40,6 +40,14 @@ jobs:
             -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info \
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
             -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+      - name: Verificar SONAR_HOST_URL definido
+        run: |
+            if [ -z "${{ secrets.SONAR_HOST_URL }}" ]; then
+            echo "❌ SONAR_HOST_URL não está definido!"
+            exit 1
+            else
+            echo "✅ SONAR_HOST_URL está presente."
+            fi
 
       - name: Validar Quality Gate do SonarQube
         env:
