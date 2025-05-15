@@ -40,7 +40,8 @@ jobs:
             -Dsonar.test.inclusions=**/*.spec.ts,**/*.test.ts \
             -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info \
             -Dsonar.host.url=$SONAR_HOST_URL \
-            -Dsonar.token=$SONAR_TOKEN
+            -Dsonar.token=$SONAR_TOKEN \
+            -Dsonar.scanner.metadataFilePath=.scanner-meta.properties
 
       - name: Validar Quality Gate do SonarCloud
         env:
@@ -51,28 +52,26 @@ jobs:
 
           PROJECT_KEY="tech-snack-fiap-soat-tech-challenge_fastfood-order-service"
 
-          COMPONENT_INFO=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/ce/component?component=$PROJECT_KEY")
+          TASK_ID=$(grep ceTaskId .scanner-meta.properties | cut -d'=' -f2)
 
-          TASK_ID=$(echo "$COMPONENT_INFO" | jq -r '.current.taskId')
-          ANALYSIS_ID=$(echo "$COMPONENT_INFO" | jq -r '.current.analysisId')
-
-          if [ "$TASK_ID" = "null" ]; then
-            echo "⚠️ Nenhuma task pendente encontrada. Usando analysisId existente."
-          else
-            STATUS="PENDING"
-            while [ "$STATUS" != "SUCCESS" ] && [ "$STATUS" != "FAILED" ]; do
-              echo "⏳ Status da análise: $STATUS"
-              sleep 5
-              STATUS=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/ce/task?id=$TASK_ID" | jq -r '.task.status')
-            done
-
-            if [ "$STATUS" != "SUCCESS" ]; then
-              echo "❌ A análise falhou no SonarCloud (status: $STATUS)"
-              exit 1
-            fi
-
-            ANALYSIS_ID=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/ce/task?id=$TASK_ID" | jq -r '.task.analysisId')
+          if [ -z "$TASK_ID" ]; then
+            echo "❌ Não foi possível encontrar ceTaskId. A análise pode ter falhado."
+            exit 1
           fi
+
+          STATUS="PENDING"
+          while [ "$STATUS" != "SUCCESS" ] && [ "$STATUS" != "FAILED" ]; do
+            echo "⏳ Status da análise: $STATUS"
+            sleep 5
+            STATUS=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/ce/task?id=$TASK_ID" | jq -r '.task.status')
+          done
+
+          if [ "$STATUS" != "SUCCESS" ]; then
+            echo "❌ A análise falhou no SonarCloud (status: $STATUS)"
+            exit 1
+          fi
+
+          ANALYSIS_ID=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/ce/task?id=$TASK_ID" | jq -r '.task.analysisId')
 
           echo "🔍 Validando Quality Gate para análise $ANALYSIS_ID..."
 
