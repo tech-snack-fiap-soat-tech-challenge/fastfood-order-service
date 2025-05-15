@@ -35,7 +35,7 @@ jobs:
         run: |
           npx sonar-scanner \
             -Dsonar.projectKey=tech-snack-fiap-soat-tech-challenge_fastfood-order-service \
-            -Dsonar.organization=fiap-tech-snack \
+            -Dsonar.organization=tech-snack-fiap-soat-tech-challenge \
             -Dsonar.sources=src \
             -Dsonar.test.inclusions=**/*.spec.ts,**/*.test.ts \
             -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info \
