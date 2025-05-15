@@ -42,33 +42,52 @@ jobs:
             -Dsonar.host.url=$SONAR_HOST_URL \
             -Dsonar.token=$SONAR_TOKEN
 
-      - name: Validar Quality Gate do SonarQube
+      - name: Validar Quality Gate do SonarCloud
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
-          echo "Aguardando resultado do Quality Gate..."
-          sleep 10
-
+          echo "Aguardando análise do SonarCloud finalizar..."
+    
           PROJECT_KEY="tech-snack-fiap-soat-tech-challenge_fastfood-order-service"
-
-          ANALYSIS_ID=$(curl -s -u $SONAR_TOKEN: \
+    
+          TASK_ID=$(curl -s -u $SONAR_TOKEN: \
             "$SONAR_HOST_URL/api/ce/component?component=$PROJECT_KEY" \
-            | jq -r '.current.analysisId')
-
+            | jq -r '.current.taskId')
+    
+          STATUS="PENDING"
+          while [ "$STATUS" != "SUCCESS" ] && [ "$STATUS" != "FAILED" ]; do
+            echo "⏳ Status da análise: $STATUS"
+            sleep 5
+            STATUS=$(curl -s -u $SONAR_TOKEN: \
+              "$SONAR_HOST_URL/api/ce/task?id=$TASK_ID" \
+              | jq -r '.task.status')
+          done
+    
+          if [ "$STATUS" != "SUCCESS" ]; then
+            echo "❌ A análise falhou no SonarCloud (status: $STATUS)"
+            exit 1
+          fi
+    
+          ANALYSIS_ID=$(curl -s -u $SONAR_TOKEN: \
+            "$SONAR_HOST_URL/api/ce/task?id=$TASK_ID" \
+            | jq -r '.task.analysisId')
+    
           QUALITY_GATE_STATUS=$(curl -s -u $SONAR_TOKEN: \
             "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" \
             | jq -r '.projectStatus.status')
-
+    
           if [ "$QUALITY_GATE_STATUS" != "OK" ]; then
             echo -e "\n❌ Quality Gate falhou! Detalhes:"
             curl -s -u $SONAR_TOKEN: \
-                "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" \
-                | jq -r '.projectStatus.conditions[] | select(.status != "OK") | "- Critério: \(.metric)\n  Valor atual: \(.actual // "n/a")\n  Status: \(.status)\n"'
+              "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" \
+              | jq -r '.projectStatus.conditions[] | select(.status != "OK") | "- Critério: \(.metric)\n  Valor atual: \(.actual // \"n/a\")\n  Status: \(.status)\n"'
+            echo -e "\n🔗 Ver detalhes: $SONAR_HOST_URL/dashboard?id=$PROJECT_KEY"
             exit 1
           else
             echo -e "\n✅ Quality Gate aprovado."
           fi
-
+                echo -e "\n🔗 Ver detalhes: $SONAR_HOST_URL/dashboard?id=$PROJECT_KEY"
 
       - name: Compilar TypeScript
         run: npm run build
