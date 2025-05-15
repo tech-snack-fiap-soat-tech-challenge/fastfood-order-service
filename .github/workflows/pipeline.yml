@@ -48,35 +48,38 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
           echo "Aguardando análise do SonarCloud finalizar..."
-    
+
           PROJECT_KEY="tech-snack-fiap-soat-tech-challenge_fastfood-order-service"
-    
-          TASK_ID=$(curl -s -u $SONAR_TOKEN: \
-            "$SONAR_HOST_URL/api/ce/component?component=$PROJECT_KEY" \
-            | jq -r '.current.taskId')
-    
-          STATUS="PENDING"
-          while [ "$STATUS" != "SUCCESS" ] && [ "$STATUS" != "FAILED" ]; do
-            echo "⏳ Status da análise: $STATUS"
-            sleep 5
-            STATUS=$(curl -s -u $SONAR_TOKEN: \
-              "$SONAR_HOST_URL/api/ce/task?id=$TASK_ID" \
-              | jq -r '.task.status')
-          done
-    
-          if [ "$STATUS" != "SUCCESS" ]; then
-            echo "❌ A análise falhou no SonarCloud (status: $STATUS)"
-            exit 1
+
+          COMPONENT_INFO=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/ce/component?component=$PROJECT_KEY")
+
+          TASK_ID=$(echo "$COMPONENT_INFO" | jq -r '.current.taskId')
+          ANALYSIS_ID=$(echo "$COMPONENT_INFO" | jq -r '.current.analysisId')
+
+          if [ "$TASK_ID" = "null" ]; then
+            echo "⚠️ Nenhuma task pendente encontrada. Usando analysisId existente."
+          else
+            STATUS="PENDING"
+            while [ "$STATUS" != "SUCCESS" ] && [ "$STATUS" != "FAILED" ]; do
+              echo "⏳ Status da análise: $STATUS"
+              sleep 5
+              STATUS=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/ce/task?id=$TASK_ID" | jq -r '.task.status')
+            done
+
+            if [ "$STATUS" != "SUCCESS" ]; then
+              echo "❌ A análise falhou no SonarCloud (status: $STATUS)"
+              exit 1
+            fi
+
+            ANALYSIS_ID=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/ce/task?id=$TASK_ID" | jq -r '.task.analysisId')
           fi
-    
-          ANALYSIS_ID=$(curl -s -u $SONAR_TOKEN: \
-            "$SONAR_HOST_URL/api/ce/task?id=$TASK_ID" \
-            | jq -r '.task.analysisId')
-    
+
+          echo "🔍 Validando Quality Gate para análise $ANALYSIS_ID..."
+
           QUALITY_GATE_STATUS=$(curl -s -u $SONAR_TOKEN: \
             "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" \
             | jq -r '.projectStatus.status')
-    
+
           if [ "$QUALITY_GATE_STATUS" != "OK" ]; then
             echo -e "\n❌ Quality Gate falhou! Detalhes:"
             curl -s -u $SONAR_TOKEN: \
@@ -87,7 +90,6 @@ jobs:
           else
             echo -e "\n✅ Quality Gate aprovado."
           fi
-                echo -e "\n🔗 Ver detalhes: $SONAR_HOST_URL/dashboard?id=$PROJECT_KEY"
 
       - name: Compilar TypeScript
         run: npm run build
