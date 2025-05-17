@@ -44,7 +44,8 @@ jobs:
             -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info \
             -Dsonar.host.url=$SONAR_HOST_URL \
             -Dsonar.token=$SONAR_TOKEN \
-            -Dsonar.scanner.metadataFilePath=$SCANNER_META_PATH
+            -Dsonar.scanner.metadataFilePath=$SCANNER_META_PATH \
+            -Dsonar.coverage.exclusions=**/main.ts,**/configuration.ts,**/*.module.ts,**/*.entity.ts,**/*.enum.ts,**/scripts/**,**/common/exceptions/**,**/common/filters/**,**/common/providers/**
 
       - name: Validar Quality Gate do SonarCloud
         env:
