@@ -1,0 +1,32 @@
+replicaCount: 2
+
+image:
+  repository: your-ecr-repo/fastfood-order-service
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+    
+env:
+  - name: PORT
+    value: "3000"
+  - name: NODE_ENV
+    value: "production"
+  - name: LOG_LEVEL
+    value: "info"
+  # Adicione outras variáveis de ambiente conforme necessário
+
+probes:
+  livenessPath: /docs
+  readinessPath: /docs
