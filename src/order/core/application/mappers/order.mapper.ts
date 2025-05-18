@@ -3,7 +3,6 @@ import { OrderProductsMapper } from './order.product.mapper';
 import { OrderOutput } from '../dtos/order.output';
 import { randomUUID } from 'crypto';
 import { OrderInput } from '../dtos/order.input';
-import { OrderStatusEnum } from '../../domain/enums/order.status.enum';
 
 export class OrderMapper {
   static toDto(order: OrderEntity): OrderOutput {
