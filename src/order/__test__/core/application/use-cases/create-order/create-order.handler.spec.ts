@@ -7,25 +7,16 @@ import { ConfigService } from '@nestjs/config';
 import { OrderEntity } from '@app/order/core/domain/entities/order.entity';
 import { OrderMapper } from '../../../../../core/application/mappers/order.mapper';
 import { IProduct } from '@app/common/interfaces/product';
-import * as fs from 'fs';
 import { OrderStatusEnum } from '@app/order/core/domain/enums/order.status.enum';
 import { CreateOrderOutput } from '@app/order/core/application/use-cases/create-order/create-order.output';
-
-jest.mock('fs', () => {
-  const actualFs = jest.requireActual('fs');
-  return {
-    ...actualFs,
-    promises: {
-      readFile: jest.fn(),
-    },
-  };
-});
+import { IProductsService } from '@app/common/interfaces/products.service.interface';
 
 describe('CreateOrderHandler', () => {
   let handler: CreateOrderHandler;
   let ordersRepository: jest.Mocked<IOrdersRepository>;
   let sqsService: jest.Mocked<SqsService>;
   let configService: jest.Mocked<ConfigService>;
+  let productsService: jest.Mocked<IProductsService>;
 
   beforeEach(async () => {
     ordersRepository = {
@@ -40,12 +31,18 @@ describe('CreateOrderHandler', () => {
       get: jest.fn().mockReturnValue('http://mock-queue-url'),
     } as unknown as jest.Mocked<ConfigService>;
 
+    productsService = {
+      getProducts: jest.fn(),
+      getProductById: jest.fn(),
+    } as unknown as jest.Mocked<IProductsService>;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CreateOrderHandler,
         { provide: IOrdersRepository, useValue: ordersRepository },
         { provide: SqsService, useValue: sqsService },
         { provide: ConfigService, useValue: configService },
+        { provide: IProductsService, useValue: productsService },
       ],
     }).compile();
 
@@ -61,18 +58,16 @@ describe('CreateOrderHandler', () => {
         products: [{ id: 1, quantity: 2 }],
       });
 
-      const mockProductsData: IProduct[] = [
-        {
-          id: 1,
-          name: 'Product 1',
-          unit_price: 50,
-          description: 'Description of Product 1',
-          category_id: 10,
-          stock_quantity: 100,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ];
+      const mockProduct: IProduct = {
+        id: 1,
+        name: 'Product 1',
+        price: 50,
+        description: 'Description of Product 1',
+        category_id: 10,
+        stock_quantity: 100,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
 
       const mockOrderEntity = new OrderEntity({
         id: '1',
@@ -84,9 +79,9 @@ describe('CreateOrderHandler', () => {
         createdAt: new Date().toISOString(),
       });
 
-      jest
-        .spyOn(fs.promises, 'readFile')
-        .mockResolvedValue(JSON.stringify(mockProductsData));
+      // Mock do serviço de produtos para retornar o produto solicitado
+      productsService.getProductById.mockResolvedValue(mockProduct);
+
       jest.spyOn(OrderMapper, 'toEntity').mockReturnValue(mockOrderEntity);
       ordersRepository.create.mockResolvedValue(mockOrderEntity);
 
@@ -94,10 +89,7 @@ describe('CreateOrderHandler', () => {
       const result = await handler.execute(command);
 
       // Assert
-      expect(fs.promises.readFile).toHaveBeenCalledWith(
-        expect.stringContaining('products.json'),
-        'utf-8',
-      );
+      expect(productsService.getProductById).toHaveBeenCalledWith(1);
       expect(ordersRepository.create).toHaveBeenCalledWith(mockOrderEntity);
       expect(sqsService.sendMessage).toHaveBeenCalledWith(
         'http://mock-queue-url',
@@ -111,20 +103,37 @@ describe('CreateOrderHandler', () => {
       expect(result).toEqual(CreateOrderOutput.from(mockOrderEntity));
     });
 
-    it('should throw an error if products file is missing', async () => {
+    it('should handle case when product is not found', async () => {
       // Arrange
       const command = new CreateOrderCommand({
         customerId: 123,
         observation: 'Test observation',
-        products: [{ id: 1, quantity: 2 }],
+        products: [{ id: 999, quantity: 2 }], // ID inexistente
       });
 
-      jest
-        .spyOn(fs.promises, 'readFile')
-        .mockRejectedValue(new Error('File not found'));
+      // Mock retornando null para um produto que não existe
+      productsService.getProductById.mockResolvedValue(null);
 
-      // Act & Assert
-      await expect(handler.execute(command)).rejects.toThrow('File not found');
+      const mockOrderEntity = new OrderEntity({
+        id: '1',
+        customerId: 123,
+        status: OrderStatusEnum.Pending,
+        products: [], // Sem produtos
+        total: 0, // Total zero
+        observation: 'Test observation',
+        createdAt: new Date().toISOString(),
+      });
+
+      jest.spyOn(OrderMapper, 'toEntity').mockReturnValue(mockOrderEntity);
+      ordersRepository.create.mockResolvedValue(mockOrderEntity);
+
+      // Act
+      const result = await handler.execute(command);
+
+      // Assert
+      expect(productsService.getProductById).toHaveBeenCalledWith(999);
+      expect(ordersRepository.create).toHaveBeenCalledWith(mockOrderEntity);
+      expect(result).toEqual(CreateOrderOutput.from(mockOrderEntity));
     });
 
     it('should throw an error if repository throws an exception', async () => {
@@ -135,15 +144,36 @@ describe('CreateOrderHandler', () => {
         products: [{ id: 1, quantity: 2 }],
       });
 
-      jest
-        .spyOn(fs.promises, 'readFile')
-        .mockResolvedValue(
-          JSON.stringify([{ id: 1, name: 'Product 1', unit_price: 50 }]),
-        );
+      const mockProduct: IProduct = {
+        id: 1,
+        name: 'Product 1',
+        price: 50,
+        description: 'Description of Product 1',
+        category_id: 10,
+        stock_quantity: 100,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      productsService.getProductById.mockResolvedValue(mockProduct);
       ordersRepository.create.mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
       await expect(handler.execute(command)).rejects.toThrow('Database error');
+    });
+
+    it('should throw an error if products service throws an exception', async () => {
+      // Arrange
+      const command = new CreateOrderCommand({
+        customerId: 123,
+        observation: 'Test observation',
+        products: [{ id: 1, quantity: 2 }],
+      });
+
+      productsService.getProductById.mockRejectedValue(new Error('API error'));
+
+      // Act & Assert
+      await expect(handler.execute(command)).rejects.toThrow('API error');
     });
   });
 });

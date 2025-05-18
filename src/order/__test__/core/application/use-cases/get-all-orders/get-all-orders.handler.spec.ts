@@ -1,11 +1,11 @@
 import { GetAllOrdersOutput } from '@app/order/core/application/use-cases/get-all-orders/get-all-orders.output';
-import { GetAllOrdersQueryHandler } from '../../../../../core/application/use-cases/get-all-orders/get-all-orders.handler';
 import { IOrdersRepository } from '@app/order/core/domain/interfaces/repositories/order.repository.interface';
 import { OrderEntity } from '@app/order/core/domain/entities/order.entity';
 import { OrderStatusEnum } from '@app/order/core/domain/enums/order.status.enum';
+import { GetAllOrdersHandler } from '@app/order/core/application/use-cases/get-all-orders/get-all-orders.handler';
 
 describe('GetAllOrdersQueryHandler', () => {
-  let handler: GetAllOrdersQueryHandler;
+  let handler: GetAllOrdersHandler;
   let ordersRepository: jest.Mocked<IOrdersRepository>;
 
   beforeEach(() => {
@@ -13,7 +13,7 @@ describe('GetAllOrdersQueryHandler', () => {
       getAll: jest.fn(),
     } as unknown as jest.Mocked<IOrdersRepository>;
 
-    handler = new GetAllOrdersQueryHandler(ordersRepository);
+    handler = new GetAllOrdersHandler(ordersRepository);
   });
 
   describe('execute', () => {
