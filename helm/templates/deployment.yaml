@@ -50,5 +50,5 @@ spec:
             httpGet:
               path: {{ .Values.probes.readinessPath }}
               port: 3000
-            initialDelaySeconds: 5
+            initialDelaySeconds: 30
             periodSeconds: 5
