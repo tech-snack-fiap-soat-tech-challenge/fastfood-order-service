@@ -10,7 +10,7 @@ export const DynamoProvider: Provider = {
   useFactory: () => {
     const client = new DynamoDBClient({
       region: process.env.DYNAMODB_REGION ?? 'us-east-1',
-      endpoint: process.env.DYNAMODB_ENDPOINT ?? 'http://localhost:8000',
+      // endpoint: process.env.DYNAMODB_ENDPOINT ?? 'http://localhost:8000',
     });
     return DynamoDBDocumentClient.from(client, {
       marshallOptions: {
