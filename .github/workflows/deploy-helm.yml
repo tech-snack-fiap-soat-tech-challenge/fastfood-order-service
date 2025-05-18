@@ -51,11 +51,37 @@ jobs:
       with:
         version: 'v3.12.3'
     
-    - name: Deploy to EKS with Helm
+    - name: Diagnose pre-deployment
+      run: |
+        echo "Nodes no cluster:"
+        kubectl get nodes || echo "Falha ao listar nodes"
+        echo "Recursos existentes:"
+        kubectl get all -n default || echo "Falha ao listar recursos"
+
+    - name: Deploy to EKS with Helm (sem wait)
       run: |
         helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ./helm \
           --set image.repository=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }} \
           --set image.tag=${{ github.sha }} \
           --namespace default \
-          --create-namespace \
-          --wait --timeout 300s
+          --create-namespace
+
+    - name: Verificar status do deploy
+      if: always()
+      run: |
+        echo "Aguardando pods inicializarem (30s)..."
+        sleep 30
+        
+        echo "Status dos pods:"
+        kubectl get pods -n default || echo "Falha ao listar pods"
+        
+        echo "Detalhes dos pods:"
+        POD_NAME=$(kubectl get pods -n default -l app=fastfood-order-service -o jsonpath="{.items[0].metadata.name}" 2>/dev/null || echo "")
+        
+        if [ -n "$POD_NAME" ]; then
+          kubectl describe pod $POD_NAME -n default
+          kubectl logs $POD_NAME -n default --all-containers || echo "Não foi possível obter logs"
+        fi
+        
+        echo "Eventos recentes:"
+        kubectl get events -n default --sort-by='.lastTimestamp' | tail -20
