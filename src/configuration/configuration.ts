@@ -10,6 +10,9 @@ export interface AppConfig {
     orderCreatedQueueUrl: string;
     paymentCompletedQueueUrl: string;
   };
+  api: {
+    productsUrl: string;
+  };
 }
 
 export const configuration = (): AppConfig => ({
@@ -31,6 +34,9 @@ export const configuration = (): AppConfig => ({
     paymentCompletedQueueUrl:
       process.env.AWS_PAYMENT_COMPLETED_QUEUE_URL ||
       'http://localhost:9324/000000000000/payment-completed.fifo',
+  },
+  api: {
+    productsUrl: process.env.PRODUCTS_API_URL || 'http://localhost:3001',
   },
 });
 
@@ -65,7 +71,7 @@ export interface DynamoConfig {
   secretAccessKey: string;
 }
 
-export default (): DynamoConfig => ({
+export default () => ({
   region: process.env.DYNAMO_REGION,
   endpoint: process.env.DYNAMO_ENDPOINT,
   accessKeyId: process.env.DYNAMO_ACCESS_KEY_ID,
