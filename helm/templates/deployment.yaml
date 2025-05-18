@@ -27,7 +27,15 @@ spec:
               value: {{ .value | quote }}
               {{- else if .valueFrom }}
               valueFrom:
-                {{- toYaml .valueFrom | nindent 6 }}
+                {{- if .valueFrom.secretKeyRef }}
+                secretKeyRef:
+                  name: {{ .valueFrom.secretKeyRef.name }}
+                  key: {{ .valueFrom.secretKeyRef.key }}
+                {{- else if .valueFrom.configMapKeyRef }}
+                configMapKeyRef:
+                  name: {{ .valueFrom.configMapKeyRef.name }}
+                  key: {{ .valueFrom.configMapKeyRef.key }}
+                {{- end }}
               {{- end }}
             {{- end }}
           resources:
