@@ -5,7 +5,7 @@ import { Inject } from '@nestjs/common';
 import { GetAllOrdersOutput } from './get-all-orders.output';
 
 @QueryHandler(GetAllOrdersQuery)
-export class GetAllOrdersQueryHandler
+export class GetAllOrdersHandler
   implements IQueryHandler<GetAllOrdersQuery, GetAllOrdersOutput>
 {
   constructor(
