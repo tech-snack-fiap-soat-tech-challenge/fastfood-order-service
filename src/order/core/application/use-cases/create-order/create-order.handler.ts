@@ -4,14 +4,13 @@ import { CreateOrderOutput } from './create-order.output';
 import { IOrdersRepository } from '@app/order/core/domain/interfaces/repositories/order.repository.interface';
 import { Inject } from '@nestjs/common';
 import { OrderMapper } from '../../mappers/order.mapper';
-import * as fs from 'fs';
-import * as path from 'path';
 import { OrderProductInput } from '../../dtos/order-products.input';
 import { IProduct } from '@app/common/interfaces/product';
 import { SqsService } from '@app/common/application/sqs.service';
 import { ConfigService } from '@nestjs/config';
 import { OrderProduct } from '@app/order/api/dtos/create.order.request';
 import { OrderCreatedEvent } from '@app/common/domain/events/order-created.event';
+import { IProductsService } from '@app/common/interfaces/products.service.interface';
 
 @CommandHandler(CreateOrderCommand)
 export class CreateOrderHandler
@@ -24,34 +23,39 @@ export class CreateOrderHandler
     private readonly ordersRepository: IOrdersRepository,
     private readonly configService: ConfigService,
     private readonly sqsService: SqsService,
+    @Inject(IProductsService)
+    private readonly productsService: IProductsService,
   ) {
     this.queueUrl = this.configService.get<string>('sqs.orderCreatedQueueUrl');
   }
 
-  private async loadProducts(): Promise<IProduct[]> {
-    const productsFilePath = path.resolve(
-      __dirname,
-      '../../../../../mocks/products.json',
+  private async loadProductsByIds(productIds: string[]): Promise<IProduct[]> {
+    // Busca apenas os produtos específicos com base nos IDs solicitados
+    const productPromises = productIds.map((id) =>
+      this.productsService
+        .getProductById(id)
+        .then((product) => product || null),
     );
-    const fileContent = await fs.promises.readFile(productsFilePath, 'utf-8');
-    return JSON.parse(fileContent) as IProduct[];
+
+    const products = await Promise.all(productPromises);
+    // Filtra produtos não encontrados (null)
+    return products.filter((product) => product !== null);
   }
 
-  private filterAndTransformProducts(
-    products: OrderProduct[],
-    productsData: IProduct[],
+  private transformProducts(
+    requestedProducts: OrderProduct[],
+    loadedProducts: IProduct[],
   ): OrderProductInput[] {
-    const productIds = products.map((product) => product.id);
-
-    const matchedProducts = productsData.filter((product: IProduct) =>
-      productIds.includes(product.id),
+    // Map para acessar quantidades rapidamente por ID
+    const quantityMap = new Map(
+      requestedProducts.map((product) => [product.id, product.quantity]),
     );
 
-    return matchedProducts.map((product: IProduct) => ({
+    return loadedProducts.map((product: IProduct) => ({
       id: product.id,
       name: product.name,
-      quantity: products.find((p) => p.id === product.id)?.quantity || 0,
-      price: product.unit_price,
+      quantity: quantityMap.get(product.id) || 0,
+      price: product.price,
     }));
   }
 
@@ -65,11 +69,16 @@ export class CreateOrderHandler
   async execute(command: CreateOrderCommand) {
     const { customerId, observation, products } = command;
 
-    const productsData = await this.loadProducts();
+    // Extrai apenas os IDs dos produtos solicitados
+    const productIds = products.map((product) => product.id);
 
-    const transformedProducts = this.filterAndTransformProducts(
+    // Carrega apenas os produtos solicitados
+    const loadedProducts = await this.loadProductsByIds(productIds);
+
+    // Transforma os produtos carregados com as quantidades solicitadas
+    const transformedProducts = this.transformProducts(
       products,
-      productsData,
+      loadedProducts,
     );
 
     const total = this.calculateTotal(transformedProducts);
