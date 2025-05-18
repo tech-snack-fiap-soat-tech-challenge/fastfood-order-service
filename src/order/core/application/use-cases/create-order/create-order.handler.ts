@@ -29,7 +29,7 @@ export class CreateOrderHandler
     this.queueUrl = this.configService.get<string>('sqs.orderCreatedQueueUrl');
   }
 
-  private async loadProductsByIds(productIds: string[]): Promise<IProduct[]> {
+  private async loadProductsByIds(productIds: number[]): Promise<IProduct[]> {
     // Busca apenas os produtos específicos com base nos IDs solicitados
     const productPromises = productIds.map((id) =>
       this.productsService

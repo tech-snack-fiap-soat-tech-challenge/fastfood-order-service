@@ -28,7 +28,7 @@ export class ProductsService implements IProductsService {
     }
   }
 
-  async getProductById(id: string): Promise<IProduct | null> {
+  async getProductById(id: number): Promise<IProduct | null> {
     try {
       const response = await firstValueFrom(
         this.httpService.get<IProduct>(`${this.apiUrl}/products/${id}`),

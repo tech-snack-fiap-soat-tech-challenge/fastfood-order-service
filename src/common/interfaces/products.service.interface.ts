@@ -4,5 +4,5 @@ export const IProductsService = Symbol('IProductsService');
 
 export interface IProductsService {
   getProducts(): Promise<IProduct[]>;
-  getProductById(id: string): Promise<IProduct | null>;
+  getProductById(id: number): Promise<IProduct | null>;
 }
