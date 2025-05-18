@@ -42,6 +42,18 @@ env:
         key: AWS_SESSION_TOKEN
   - name: DYNAMODB_REGION
     value: "us-east-1"
+  - name: AWS_REGION
+    value: "us-east-1"
+  - name: AWS_ORDER_CREATED_QUEUE_URL
+    valueFrom:
+      secretKeyRef:
+        name: aws-sqs-config
+        key: AWS_ORDER_CREATED_QUEUE_URL
+  - name: AWS_PAYMENT_COMPLETED_QUEUE_URL
+    valueFrom:
+      secretKeyRef:
+        name: aws-sqs-config
+        key: AWS_PAYMENT_COMPLETED_QUEUE_URL
   # Adicione outras variáveis de ambiente conforme necessário
 
 probes:

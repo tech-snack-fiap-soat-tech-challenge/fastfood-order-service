@@ -70,6 +70,14 @@ jobs:
           
         echo "Secret aws-credentials criado/atualizado com sucesso"
 
+    - name: Configurar secrets para AWS SQS
+      run: |
+        kubectl create secret generic aws-sqs-config \
+          --from-literal=AWS_ORDER_CREATED_QUEUE_URL=${{ secrets.AWS_ORDER_CREATED_QUEUE_URL }} \
+          --from-literal=AWS_PAYMENT_COMPLETED_QUEUE_URL=${{ secrets.AWS_PAYMENT_COMPLETED_QUEUE_URL }} \
+          --namespace default \
+          --dry-run=client -o yaml | kubectl apply -f -
+
     - name: Deploy to EKS with Helm (sem wait)
       run: |
         helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ./helm \
