@@ -10,7 +10,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Fast Food Order Service')
-    .setDescription('API documentation for the Fast Food application')
+    .setDescription('API documentation for the Fast Food Order Service')
     .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, config);
