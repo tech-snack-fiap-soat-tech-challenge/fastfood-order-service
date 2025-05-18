@@ -85,3 +85,23 @@ jobs:
         
         echo "Eventos recentes:"
         kubectl get events -n default --sort-by='.lastTimestamp' | tail -20
+
+    - name: Obter URL da aplicação
+      if: always()
+      run: |
+        echo "Verificando informações do serviço..."
+        kubectl get svc ${{ env.HELM_RELEASE_NAME }} -n default
+        
+        # Aguarda o LoadBalancer obter um endereço externo
+        echo "Aguardando o LoadBalancer provisionar um endereço externo (pode levar alguns minutos)..."
+        kubectl wait --for=jsonpath='{.status.loadBalancer.ingress[0].hostname}' svc/${{ env.HELM_RELEASE_NAME }} -n default --timeout=300s || echo "Tempo limite excedido aguardando URL externa"
+        
+        # Obtém e exibe o endereço externo
+        LB_ENDPOINT=$(kubectl get svc ${{ env.HELM_RELEASE_NAME }} -n default -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+        
+        if [ -n "$LB_ENDPOINT" ]; then
+          echo "✅ A aplicação está disponível em: http://${LB_ENDPOINT}"
+          echo "::set-output name=app_url::http://${LB_ENDPOINT}"
+        else
+          echo "⚠️ LoadBalancer ainda não tem um endereço externo atribuído."
+        fi
