@@ -1,15 +1,22 @@
-name: Deploy Backend to AWS EKS
+name: Esteira de CI | CD para Construir, Testar e Implantar Aplicação no AWS EKS com o Helm
 
 on:
   push:
-    branches:
-      - main
+    branches: 
+    - feat/deploy
+    - main
   pull_request:
     branches:
       - main
 
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REPOSITORY: fiap-fastfood
+  EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME}}
+  HELM_RELEASE_NAME: fastfood-order-service
+
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -53,109 +60,144 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
           echo "Aguardando análise do SonarCloud finalizar..."
-
           PROJECT_KEY="tech-snack-fiap-soat-tech-challenge_fastfood-order-service"
           META_PATH="$(pwd)/.scanner-meta.properties"
-
           TASK_ID=$(grep ceTaskId "$META_PATH" | cut -d'=' -f2)
-
           if [ -z "$TASK_ID" ]; then
-            echo "❌ Não foi possível encontrar ceTaskId. A análise pode ter falhado."
+            echo "❌ ceTaskId não encontrado"
             exit 1
           fi
-
           STATUS="PENDING"
           while [ "$STATUS" != "SUCCESS" ] && [ "$STATUS" != "FAILED" ]; do
-            echo "⏳ Status da análise: $STATUS"
             sleep 5
             STATUS=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/ce/task?id=$TASK_ID" | jq -r '.task.status')
           done
-
           if [ "$STATUS" != "SUCCESS" ]; then
-            echo "❌ A análise falhou no SonarCloud (status: $STATUS)"
+            echo "❌ Análise falhou"
             exit 1
           fi
-
-          ANALYSIS_ID=""
-          while [ -z "$ANALYSIS_ID" ] || [ "$ANALYSIS_ID" == "null" ]; do
-            echo "⏳ Aguardando analysisId da task..."
-            sleep 3
             ANALYSIS_ID=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/ce/task?id=$TASK_ID" | jq -r '.task.analysisId')
-          done
-
-          echo "🔍 Validando Quality Gate para análise $ANALYSIS_ID..."
-
-          QUALITY_GATE_STATUS=$(curl -s -u $SONAR_TOKEN: \
-            "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" \
-            | jq -r '.projectStatus.status')
-
+          QUALITY_GATE_STATUS=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" | jq -r '.projectStatus.status')
           if [ "$QUALITY_GATE_STATUS" != "OK" ]; then
-            echo -e "\n❌ Quality Gate falhou! Detalhes:"
-            curl -s -u $SONAR_TOKEN: \
-              "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" \
-              | jq -r '.projectStatus.conditions[] | select(.status != "OK") | "- Critério: \(.metric)\n  Valor atual: \(.actual // \"n/a\")\n  Status: \(.status)\n"'
-            echo -e "\n🔗 Ver detalhes: $SONAR_HOST_URL/dashboard?id=$PROJECT_KEY"
+            echo "❌ Quality Gate falhou!"
             exit 1
           else
-            echo -e "\n✅ Quality Gate aprovado."
+            echo "✅ Quality Gate aprovado."
           fi
 
       - name: Compilar TypeScript
         run: npm run build
-
-      - name: Arquivar artefatos de build
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-output
-          path: dist/
-
-  deploy:
-    needs: build
+        
+  build-and-deploy:
+    name: Construir e Implantar no AWS EKS com o Helm
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
+    
     steps:
-      - name: Checkout código-fonte
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-region: ${{ secrets.AWS_REGION }}
+    
+    - name: Autenticação no AWS ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+    
+    - name: Construir, adicionar tag e enviar imagem para o AWS ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+    
+    - name: Atualizar Configurações do kubeconfig
+      run: aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }} --region ${{ secrets.AWS_REGION }}
+    
+    - name: Configurar o Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: 'v3.12.3'
+    
+    - name: Diagnosticar pré implantação
+      run: |
+        echo "Nodes no cluster:"
+        kubectl get nodes || echo "Falha ao listar nodes"
+        echo "Recursos existentes:"
+        kubectl get all -n default || echo "Falha ao listar recursos"
 
-      - name: Baixar artefatos de build
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output
-          path: dist/
+    - name: Configurar credenciais AWS no Kubernetes
+      run: |
+        # Criar secret para as credenciais AWS
+        kubectl create secret generic aws-credentials \
+          --from-literal=AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
+          --from-literal=AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+          --from-literal=AWS_SESSION_TOKEN=${{ secrets.AWS_SESSION_TOKEN }} \
+          --namespace default \
+          --dry-run=client -o yaml | kubectl apply -f -
+          
+        echo "Secret aws-credentials criado/atualizado com sucesso"
 
-      - name: Configurar AWS CLI
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: us-east-1
+    - name: Configurar secrets para AWS SQS
+      run: |
+        kubectl create secret generic aws-sqs-config \
+          --from-literal=AWS_ORDER_CREATED_QUEUE_URL=${{ secrets.AWS_ORDER_CREATED_QUEUE_URL }} \
+          --from-literal=AWS_PAYMENT_COMPLETED_QUEUE_URL=${{ secrets.AWS_PAYMENT_COMPLETED_QUEUE_URL }} \
+          --namespace default \
+          --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Fazer login no Amazon ECR
-        run: |
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_REPOSITORY }}
+    - name: Implantar no AWS EKS (sem wait)
+      run: |
+        helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ./helm \
+          --set image.repository=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }} \
+          --set image.tag=${{ github.sha }} \
+          --namespace default \
+          --create-namespace
 
-      - name: Construir e enviar imagem Docker para o ECR
-        run: |
-          docker build -t ${{ secrets.AWS_ECR_REPOSITORY }}:latest .
-          docker push ${{ secrets.AWS_ECR_REPOSITORY }}:latest
+    - name: Verificar status do deploy
+      if: always()
+      run: |
+        echo "Aguardando pods inicializarem (30s)..."
+        sleep 30
+        
+        echo "Status dos pods:"
+        kubectl get pods -n default || echo "Falha ao listar pods"
+        
+        echo "Detalhes dos pods:"
+        POD_NAME=$(kubectl get pods -n default -l app=fastfood-order-service -o jsonpath="{.items[0].metadata.name}" 2>/dev/null || echo "")
+        
+        if [ -n "$POD_NAME" ]; then
+          kubectl describe pod $POD_NAME -n default
+          kubectl logs $POD_NAME -n default --all-containers || echo "Não foi possível obter logs"
+        fi
+        
+        echo "Eventos recentes:"
+        kubectl get events -n default --sort-by='.lastTimestamp' | tail -20
 
-      - name: Configurar kubectl e acessar cluster EKS
-        run: |
-          aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }} --region us-east-1
-
-      - name: Instalar Helm
-        uses: azure/setup-helm@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Fazer deploy com Helm
-        run: |
-          helm upgrade --install fiap-fastfood ./deployment/fiap-fast-food \
-            --namespace default \
-            --set image.repository=${{ secrets.AWS_ECR_REPOSITORY }} \
-            --set image.tag=latest
-
-      - name: Verificar status dos pods
-        run: kubectl get pods -o wide
+    - name: Obter URL da aplicação
+      if: always()
+      run: |
+        echo "Verificando informações do serviço..."
+        kubectl get svc ${{ env.HELM_RELEASE_NAME }} -n default
+        
+        # Aguarda o LoadBalancer obter um endereço externo
+        echo "Aguardando o LoadBalancer provisionar um endereço externo (pode levar alguns minutos)..."
+        kubectl wait --for=jsonpath='{.status.loadBalancer.ingress[0].hostname}' svc/${{ env.HELM_RELEASE_NAME }} -n default --timeout=300s || echo "Tempo limite excedido aguardando URL externa"
+        
+        # Obtém e exibe o endereço externo
+        LB_ENDPOINT=$(kubectl get svc ${{ env.HELM_RELEASE_NAME }} -n default -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+        
+        if [ -n "$LB_ENDPOINT" ]; then
+          echo "✅ A aplicação está disponível em: http://${LB_ENDPOINT}"
+          echo "::set-output name=app_url::http://${LB_ENDPOINT}"
+        else
+          echo "⚠️ LoadBalancer ainda não tem um endereço externo atribuído."
+        fi
