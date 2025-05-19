@@ -64,7 +64,7 @@ jobs:
           META_PATH="$(pwd)/.scanner-meta.properties"
           TASK_ID=$(grep ceTaskId "$META_PATH" | cut -d'=' -f2)
           if [ -z "$TASK_ID" ]; then
-            echo "❌ ceTaskId não encontrado"
+            echo "❌ Não foi possível encontrar ceTaskId. A análise pode ter falhado."
             exit 1
           fi
           STATUS="PENDING"
@@ -76,13 +76,29 @@ jobs:
             echo "❌ Análise falhou"
             exit 1
           fi
+
+          ANALYSIS_ID=""
+          while [ -z "$ANALYSIS_ID" ] || [ "$ANALYSIS_ID" == "null" ]; do
+            echo "⏳ Aguardando analysisId da task..."
+            sleep 3
             ANALYSIS_ID=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/ce/task?id=$TASK_ID" | jq -r '.task.analysisId')
-          QUALITY_GATE_STATUS=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" | jq -r '.projectStatus.status')
+          done
+
+          echo "🔍 Validando Quality Gate para análise $ANALYSIS_ID..."
+
+          QUALITY_GATE_STATUS=$(curl -s -u $SONAR_TOKEN: \
+            "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" \
+            | jq -r '.projectStatus.status')
+
           if [ "$QUALITY_GATE_STATUS" != "OK" ]; then
-            echo "❌ Quality Gate falhou!"
+            echo -e "\n❌ Quality Gate falhou! Detalhes:"
+            curl -s -u $SONAR_TOKEN: \
+              "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" \
+              | jq -r '.projectStatus.conditions[] | select(.status != "OK") | "- Critério: \(.metric)\n  Valor atual: \(.actual // \"n/a\")\n  Status: \(.status)\n"'
+            echo -e "\n🔗 Ver detalhes: $SONAR_HOST_URL/dashboard?id=$PROJECT_KEY"
             exit 1
           else
-            echo "✅ Quality Gate aprovado."
+            echo -e "\n✅ Quality Gate aprovado."
           fi
 
       - name: Compilar TypeScript
