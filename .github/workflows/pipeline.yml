@@ -52,7 +52,7 @@ jobs:
             -Dsonar.host.url=$SONAR_HOST_URL \
             -Dsonar.token=$SONAR_TOKEN \
             -Dsonar.scanner.metadataFilePath=$SCANNER_META_PATH \
-            -Dsonar.coverage.exclusions=**/main.ts,**/configuration.ts,**/*.module.ts,**/*.entity.ts,**/*.enum.ts,**/scripts/**,**/common/exceptions/**,**/common/filters/**,**/common/providers/**
+            -Dsonar.coverage.exclusions=**/main.ts,**/configuration.ts,**/*.module.ts,**/*.entity.ts,**/*.enum.ts,**/scripts/**,**/common/exceptions/**,**/common/filters/**,**/common/providers/** \
             -Dsonar.exclusions=.github/workflows/**
 
       - name: Validar Quality Gate do SonarCloud
