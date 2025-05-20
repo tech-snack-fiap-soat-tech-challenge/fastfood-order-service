@@ -28,6 +28,11 @@ jobs:
     steps:
       - name: Checkout código-fonte
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          ref: ${{ github.ref }}
+
 
       - name: Configurar Node.js
         uses: actions/setup-node@v4
@@ -61,7 +66,7 @@ jobs:
     name: Deploy para AWS EKS
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/deploy'
+    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout código-fonte
