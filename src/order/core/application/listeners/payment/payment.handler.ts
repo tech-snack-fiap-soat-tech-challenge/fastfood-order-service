@@ -15,7 +15,6 @@ export class PaymentEventHandler
   ) {}
 
   async handle(event: CheckoutUpdatedEvent) {
-    console.log('PaymentEventHandler', event);
     const statusMapping = {
       [CheckoutStatusEnum.Paid]: OrderStatusEnum.Received,
       [CheckoutStatusEnum.Refused]: OrderStatusEnum.Cancelled,

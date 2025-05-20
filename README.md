@@ -1,110 +1,98 @@
-# Tech Challenge Fast Food - Fase 1
+# 🍔 FastFood - Order Service
 
-## Descrição do Projeto
+Welcome to the **Order microservice** for the FastFood App!  
+Built with **NestJS**, **TypeScript**, and **DynamoDB** — this service handles all order processing operations for our fast food ordering system.
 
-Este projeto é um sistema de controle de pedidos para uma lanchonete de bairro em expansão, projetado para resolver problemas de atendimento ao cliente e de organização interna. Com um sistema de autoatendimento, os clientes podem montar seus pedidos sem precisar interagir com um atendente, melhorando a eficiência e a satisfação do cliente.
+## 📋 Service Overview
 
-## Objetivos
+The Order Service is responsible for:
 
-1. **Gestão de Pedidos:** Permitir que os clientes criem e acompanhem pedidos por uma interface intuitiva.
-2. **Pagamento Simplificado:** Utilizar QR Code via Mercado Pago para facilitar o processo de pagamento.
-3. **Painel Administrativo:** Disponibilizar funcionalidades para o estabelecimento gerenciar clientes, produtos e pedidos em andamento.
-4. **Organização do Backend:** Estruturar o backend com base na arquitetura hexagonal e documentar as APIs via Swagger para fácil integração e testes.
+- Managing customer orders from creation to completion
+- Tracking order status throughout the fulfillment process
+- Validating order items and quantities
+- Calculating order totals and applying promotions
+- Communicating order events to other microservices
+- Providing a unified order management interface for the FastFood ecosystem
 
-## Funcionalidades
+This microservice follows Clean Architecture principles, with clear separation between domain logic and infrastructure concerns, ensuring maintainable and testable code.
+---
 
-### Para o Cliente
-- **Montagem do Pedido:** Escolha de itens opcionais como lanche, acompanhamento, bebida e sobremesa.
-- **Pagamento:** Pagamento rápido e seguro via QR Code.
-- **Acompanhamento do Pedido:** Status atualizado em tempo real, desde "Recebido" até "Finalizado".
+## 🚀 Getting Started with Local Development
 
-### Para o Administrador
-- **Gestão de Produtos:** Criar, editar e remover produtos, categorizados em lanche, acompanhamento, bebida e sobremesa.
-- **Gestão de Clientes:** Identificação e cadastro dos clientes para campanhas e fidelização.
-- **Monitoramento de Pedidos:** Controle sobre o andamento dos pedidos e tempo de espera.
+### Prerequisites
 
-## Pré-requisitos
+Before you begin, make sure you have:
 
-- Node 20.17
-- Docker e Docker Compose instalados
-- Acesso ao repositório privado (compartilhado com o usuário `soat-architecture`)
+- [Node.js 20+](https://nodejs.org/pt/download)
+- [DynamoDB Local](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html) (or use it via Docker)
+- [Docker](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/) (optional, but helpful!)
 
-## Configuração do Ambiente
+### Setup Environment Variables
 
-1. Clone o repositório:
-   ```bash
-   git clone https://github.com/tech-snack-fiap-soat-tech-challenge/fastfood-app
-   cd fastfood-app
-   ```
+Duplicate and rename the `.env.example` to `.env`. Then update it with your local configuration values.
 
-2. Instale as dependências do projeto:
-    ```bash
-    npm i
-    ```
+### Install Dependencies
 
-3. Inicie a aplicação: 
-    ```bash
-    npm run start:dev
-    ```
+From the project root, run:
 
-4. Acesse o Swagger para visualizar e testar as APIs disponíveis:
-   ```
-   http://localhost:3000/docs   
-   ```
+```bash
+npm install
+```
 
-### Rodando aplicação no docker
+### Set Up DynamoDB Local
 
-O a aplicação possui um Docker compose caso deseje rodar com Docker.
+If you're running DynamoDB locally, make sure it's running on port 8000:
 
-1. Construa e inicie os contêineres com Docker:
-   ```bash
-   docker-compose up --build
-   ```
+```bash
+# Run this script to create the Orders table in DynamoDB Local
+npm run dynamo:init
+```
 
-2. Acesse o Swagger para visualizar e testar as APIs disponíveis:
-   ```
-   http://localhost:3000/docs
-   ```
+### Start the App in Dev Mode
 
-## Estrutura do Projeto
+```bash
+npm run start:dev
+```
 
-- **APIs Principais**:
-  - Cadastro e Identificação do Cliente
-  - Criação, edição e remoção de produtos
-  - Filtragem de produtos por categoria
-  - Checkout e listagem de pedidos
+---
 
+## 🐳 Running with Docker
 
-### Banco de Dados
+Prefer containers? Run the app using Docker:
 
-Foi utilizado PostgreSQL para persistência de dados. 
+```bash
+docker compose up --build
+```
 
-![Diagrama do Sistema](docs/fastfood_db-diagram.png)
+> DynamoDB Local will be started automatically and the required tables will be created! 🙌
 
+---
 
-- **Criação das tabelas** Para a criação das tabelas necessárias, é preciso iniciar o banco de dados e executar as migrações que realizam a criação.
+## 📚 API Docs with Swagger
 
-   ```bash
-   npx db-migrate up
-   ```
+API documentation is auto-generated using **Swagger** and available once the app is running.
 
-- Para apagar as tabelas execute o comando:
+👉 Visit: [http://localhost:3000/docs](http://localhost:3000/docs)
 
-   ```bash
-   npx db-migrate reset
-   ```
+---
 
+## 🧪 Running Tests
 
-## AWS 
-O projeto roda em infra AWS, segue o desenho da Arquitetura AWS.
+To run tests in watch mode during development:
 
-![AWS](docs/aws-infra.png)
+```bash
+npm run test:dev
+```
 
-## Observações
+---
 
-- O foco do projeto é o backend; interfaces para o frontend não são necessárias nesta fase.
-- Diagramas e documentações adicionais estão disponíveis no diretório `docs/`
+## 📝 Notes
 
-### Demo
-O vídeo demonstrando o funcionamento completo da API e a Infraestrutura está disponível em:
-https://youtu.be/Pmx_SDKAbOQ
+- DynamoDB tables are created using the setup script in `src/scripts/setup-dynamodb-local.ts`
+- The app uses path aliases and a clean architecture
+- The Orders table uses GSI_Status index to query orders by status and creation date
+- Health check endpoints are included and integrated in Docker setup
+
+---
+
+Made with ❤️ by TechSnack — The FastFood App
