@@ -3,6 +3,11 @@
 Welcome to the **Order microservice** for the FastFood App!  
 Built with **NestJS**, **TypeScript**, and **DynamoDB** — this service handles all order processing operations for our fast food ordering system.
 
+**Sonar Analyses:**
+
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=tech-snack-fiap-soat-tech-challenge_fastfood-order-service&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=tech-snack-fiap-soat-tech-challenge_fastfood-order-service)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=tech-snack-fiap-soat-tech-challenge_fastfood-order-service&metric=coverage)](https://sonarcloud.io/summary/new_code?id=tech-snack-fiap-soat-tech-challenge_fastfood-order-service)
+
 ## 📋 Service Overview
 
 The Order Service is responsible for:
@@ -15,6 +20,7 @@ The Order Service is responsible for:
 - Providing a unified order management interface for the FastFood ecosystem
 
 This microservice follows Clean Architecture principles, with clear separation between domain logic and infrastructure concerns, ensuring maintainable and testable code.
+
 ---
 
 ## 🚀 Getting Started with Local Development
