@@ -16,7 +16,7 @@ permissions:
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
-  ECR_REPOSITORY: fiap-fastfood
+  ECR_REPOSITORY: fastfood-order-service
   EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
   HELM_RELEASE_NAME: fastfood-order-service
 
@@ -118,6 +118,13 @@ jobs:
           kubectl create secret generic aws-sqs-config \
             --from-literal=AWS_ORDER_CREATED_QUEUE_URL=${{ secrets.AWS_ORDER_CREATED_QUEUE_URL }} \
             --from-literal=AWS_PAYMENT_COMPLETED_QUEUE_URL=${{ secrets.AWS_PAYMENT_COMPLETED_QUEUE_URL }} \
+            --namespace default \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Criar secret para API de Produtos
+        run: |
+          kubectl create secret generic products-api-config \
+            --from-literal=PRODUCTS_API_URL=${{ secrets.PRODUCTS_API_URL }} \
             --namespace default \
             --dry-run=client -o yaml | kubectl apply -f -
 
