@@ -126,10 +126,11 @@ jobs:
             --namespace default \
             --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Criar secret para API de Produtos
+      - name: Criar secret para API
         run: |
-          kubectl create secret generic products-api-config \
+          kubectl create secret generic api-config \
             --from-literal=PRODUCTS_API_URL=${{ secrets.PRODUCTS_API_URL }} \
+            --from-literal=CUSTOMERS_API_URL=${{ secrets.CUSTOMERS_API_URL }} \
             --namespace default \
             --dry-run=client -o yaml | kubectl apply -f -
 

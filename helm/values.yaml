@@ -57,12 +57,12 @@ env:
   - name: PRODUCTS_API_URL
     valueFrom:
       secretKeyRef:
-        name: products-api-config
+        name: api-config
         key: PRODUCTS_API_URL
   - name: CUSTOMERS_API_URL
     valueFrom:
       secretKeyRef:
-        name: products-api-config
+        name: api-config
         key: CUSTOMERS_API_URL
   # Adicione outras variáveis de ambiente conforme necessário
 
