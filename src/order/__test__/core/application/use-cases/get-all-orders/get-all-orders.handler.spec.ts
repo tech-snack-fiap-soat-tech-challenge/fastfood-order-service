@@ -22,6 +22,7 @@ describe('GetAllOrdersQueryHandler', () => {
       const mockOrders: OrderEntity[] = [
         new OrderEntity({
           id: '1',
+          customerName: 'John Doe',
           customerId: 123,
           status: OrderStatusEnum.Pending,
           products: [],
@@ -31,6 +32,7 @@ describe('GetAllOrdersQueryHandler', () => {
         }),
         new OrderEntity({
           id: '2',
+          customerName: 'Jane Doe',
           customerId: 456,
           status: OrderStatusEnum.Completed,
           products: [],

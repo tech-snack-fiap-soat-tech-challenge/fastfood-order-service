@@ -16,6 +16,12 @@ export class OrderOutput {
   customerId: number;
 
   @ApiProperty({
+    description: 'Name of the customer who placed the order',
+    example: 'John Doe',
+  })
+  customerName: string;
+
+  @ApiProperty({
     description: 'Current status of the order',
     enum: OrderStatusEnum,
     example: OrderStatusEnum.Pending,

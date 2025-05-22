@@ -33,6 +33,7 @@ describe('DeleteOrderHandler', () => {
       const mockOrder = new OrderEntity({
         id: '1',
         customerId: 123,
+        customerName: 'John Doe',
         status: OrderStatusEnum.Pending,
         products: [],
         total: 100,

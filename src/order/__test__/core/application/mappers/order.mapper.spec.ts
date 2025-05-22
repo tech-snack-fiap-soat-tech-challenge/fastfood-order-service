@@ -9,6 +9,7 @@ describe('OrderMapper', () => {
       const orderEntity = new OrderEntity({
         id: 'order-1',
         customerId: 100,
+        customerName: 'John Doe',
         status: OrderStatusEnum.Pending,
         observation: 'Test order',
         total: 150,
@@ -45,6 +46,7 @@ describe('OrderMapper', () => {
     it('should map OrderInput to OrderEntity and generate id and createdAt', () => {
       const orderInput: OrderInput = {
         customerId: 200,
+        customerName: 'Jane Doe',
         observation: 'New Order',
         total: 300,
         products: [

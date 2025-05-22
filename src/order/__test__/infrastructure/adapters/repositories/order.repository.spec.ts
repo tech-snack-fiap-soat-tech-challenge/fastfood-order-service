@@ -131,6 +131,7 @@ describe('OrdersRepository', () => {
       // Arrange
       const order = new OrderEntity({
         id: '1',
+        customerName: 'John Doe',
         customerId: 123,
         status: OrderStatusEnum.Pending,
         products: [],
