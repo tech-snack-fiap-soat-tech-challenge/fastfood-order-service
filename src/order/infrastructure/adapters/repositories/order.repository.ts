@@ -64,6 +64,7 @@ export class OrdersRepository implements IOrdersRepository {
       const order = new OrderEntity({
         id: item.id,
         customerId: item.customerId,
+        customerName: item.customerName,
         status: item.status,
         products,
         observation: item.observation,
@@ -100,6 +101,7 @@ export class OrdersRepository implements IOrdersRepository {
     const order = new OrderEntity({
       id: item.id,
       customerId: item.customerId,
+      customerName: item.customerName,
       status: item.status,
       products,
       total: item.total,
@@ -138,6 +140,7 @@ export class OrdersRepository implements IOrdersRepository {
       const order = new OrderEntity({
         id: item.id,
         customerId: item.customerId,
+        customerName: item.customerName,
         products,
         observation: item.observation,
         total: item.total,
@@ -216,6 +219,7 @@ export class OrdersRepository implements IOrdersRepository {
     const updatedOrder = new OrderEntity({
       id: result.id,
       customerId: result.customerId,
+      customerName: result.customerName,
       products,
       observation: result.observation,
       total: result.total,

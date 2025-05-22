@@ -10,6 +10,7 @@ import { IProduct } from '@app/common/interfaces/product';
 import { OrderStatusEnum } from '@app/order/core/domain/enums/order.status.enum';
 import { CreateOrderOutput } from '@app/order/core/application/use-cases/create-order/create-order.output';
 import { IProductsService } from '@app/common/interfaces/products.service.interface';
+import { ICustomersService } from '@app/common/interfaces/customer.service.interface';
 
 describe('CreateOrderHandler', () => {
   let handler: CreateOrderHandler;
@@ -17,6 +18,7 @@ describe('CreateOrderHandler', () => {
   let sqsService: jest.Mocked<SqsService>;
   let configService: jest.Mocked<ConfigService>;
   let productsService: jest.Mocked<IProductsService>;
+  let clientService: jest.Mocked<ICustomersService>;
 
   beforeEach(async () => {
     ordersRepository = {
@@ -36,6 +38,10 @@ describe('CreateOrderHandler', () => {
       getProductById: jest.fn(),
     } as unknown as jest.Mocked<IProductsService>;
 
+    clientService = {
+      getCustomerById: jest.fn(),
+    } as unknown as jest.Mocked<ICustomersService>;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CreateOrderHandler,
@@ -43,6 +49,7 @@ describe('CreateOrderHandler', () => {
         { provide: SqsService, useValue: sqsService },
         { provide: ConfigService, useValue: configService },
         { provide: IProductsService, useValue: productsService },
+        { provide: ICustomersService, useValue: clientService },
       ],
     }).compile();
 
@@ -72,6 +79,7 @@ describe('CreateOrderHandler', () => {
       const mockOrderEntity = new OrderEntity({
         id: '1',
         customerId: 123,
+        customerName: 'John Doe',
         status: OrderStatusEnum.Pending,
         products: [{ id: 1, name: 'Product 1', quantity: 2, price: 50 }],
         total: 100,
@@ -117,6 +125,7 @@ describe('CreateOrderHandler', () => {
       const mockOrderEntity = new OrderEntity({
         id: '1',
         customerId: 123,
+        customerName: 'John Doe',
         status: OrderStatusEnum.Pending,
         products: [], // Sem produtos
         total: 0, // Total zero

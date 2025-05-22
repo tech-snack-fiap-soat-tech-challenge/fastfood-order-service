@@ -23,6 +23,7 @@ describe('GetOrdersByStatusHandler', () => {
       const mockOrders: OrderEntity[] = [
         new OrderEntity({
           id: '1',
+          customerName: 'John Doe',
           customerId: 123,
           status,
           products: [],

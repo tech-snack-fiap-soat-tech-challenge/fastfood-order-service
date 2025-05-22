@@ -4,6 +4,7 @@ import { OrderProductEntity } from './order.product.entity';
 export class OrderEntity {
   id: string;
   customerId: number;
+  customerName: string;
   status: OrderStatusEnum;
   products: OrderProductEntity[];
   total: number;
@@ -13,6 +14,7 @@ export class OrderEntity {
   constructor(init: {
     id: string;
     customerId: number;
+    customerName: string;
     status?: OrderStatusEnum;
     products: OrderProductEntity[];
     observation: string;
@@ -20,6 +22,7 @@ export class OrderEntity {
     createdAt?: string;
   }) {
     this.id = init.id;
+    this.customerName = init.customerName;
     this.customerId = init.customerId;
     this.status = init.status || OrderStatusEnum.Pending;
     this.products = init.products;

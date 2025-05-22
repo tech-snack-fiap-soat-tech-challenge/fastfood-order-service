@@ -11,6 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { OrderProduct } from '@app/order/api/dtos/create.order.request';
 import { OrderCreatedEvent } from '@app/common/domain/events/order-created.event';
 import { IProductsService } from '@app/common/interfaces/products.service.interface';
+import { ICustomersService } from '@app/common/interfaces/customer.service.interface';
 
 @CommandHandler(CreateOrderCommand)
 export class CreateOrderHandler
@@ -25,6 +26,8 @@ export class CreateOrderHandler
     private readonly sqsService: SqsService,
     @Inject(IProductsService)
     private readonly productsService: IProductsService,
+    @Inject(ICustomersService)
+    private readonly customerService: ICustomersService,
   ) {
     this.queueUrl = this.configService.get<string>('sqs.orderCreatedQueueUrl');
   }
@@ -69,6 +72,13 @@ export class CreateOrderHandler
   async execute(command: CreateOrderCommand) {
     const { customerId, observation, products } = command;
 
+    // Consulta o cliente
+    let customerName: string = null;
+    if (customerId) {
+      const customer = await this.customerService.getCustomerById(customerId);
+      customerName = customer ? customer.name : null;
+    }
+
     // Extrai apenas os IDs dos produtos solicitados
     const productIds = products.map((product) => product.id);
 
@@ -85,6 +95,7 @@ export class CreateOrderHandler
 
     const entity = OrderMapper.toEntity({
       customerId,
+      customerName,
       observation,
       products: transformedProducts,
       total,

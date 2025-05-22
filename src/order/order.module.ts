@@ -14,6 +14,8 @@ import { PaymentListener } from './core/application/listeners/payment/payment.li
 import { GetAllOrdersHandler } from './core/application/use-cases/get-all-orders/get-all-orders.handler';
 import { IProductsService } from '@app/common/interfaces/products.service.interface';
 import { ProductsService } from '@app/common/infrastructure/services/products.service';
+import { ICustomersService } from '@app/common/interfaces/customer.service.interface';
+import { CustomerService } from '@app/common/infrastructure/services/clients.service';
 
 const handlers = [
   GetAllOrdersHandler,
@@ -36,6 +38,11 @@ const ProductsServiceProvider = {
   useClass: ProductsService,
 };
 
+const CustomerServiceProvider = {
+  provide: ICustomersService,
+  useClass: CustomerService,
+};
+
 @Module({
   imports: [
     CqrsModule,
@@ -48,6 +55,7 @@ const ProductsServiceProvider = {
     ...listeners,
     OrdersRepositoryProvider,
     ProductsServiceProvider, // Adicionando o provider diretamente
+    CustomerServiceProvider,
   ],
 })
 export class OrderModule {}

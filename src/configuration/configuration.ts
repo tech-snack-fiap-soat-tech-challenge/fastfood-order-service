@@ -12,6 +12,7 @@ export interface AppConfig {
   };
   api: {
     productsUrl: string;
+    customersUrl: string;
   };
 }
 
@@ -36,6 +37,7 @@ export const configuration = (): AppConfig => ({
       'http://localhost:9324/000000000000/payment-completed.fifo',
   },
   api: {
+    customersUrl: process.env.CUSTOMERS_API_URL || 'http://localhost:3002',
     productsUrl: process.env.PRODUCTS_API_URL || 'http://localhost:3001',
   },
 });

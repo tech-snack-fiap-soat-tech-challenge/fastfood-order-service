@@ -32,6 +32,7 @@ describe('PaymentEventHandler', () => {
       const event = new CheckoutUpdatedEvent('1', CheckoutStatusEnum.Paid);
       const mockOrder = new OrderEntity({
         id: '1',
+        customerName: 'John Doe',
         customerId: 123,
         status: OrderStatusEnum.Pending,
         products: [],
@@ -69,6 +70,7 @@ describe('PaymentEventHandler', () => {
       const event = new CheckoutUpdatedEvent('1', CheckoutStatusEnum.Refused);
       const mockOrder = new OrderEntity({
         id: '1',
+        customerName: 'John Doe',
         customerId: 123,
         status: OrderStatusEnum.Pending,
         products: [],
